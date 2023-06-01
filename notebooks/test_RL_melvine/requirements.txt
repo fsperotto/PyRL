@@ -1,0 +1,10 @@
+pymdptoolbox
+dm-acme[jax,tf,envs]
+ale-py
+mujoco-py
+dopamine-rl
+ray[rllib]
+tensorflow
+torch
+trfl
+deer
