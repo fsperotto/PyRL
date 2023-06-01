@@ -1,0 +1,9 @@
+**gambler** package is written and maintained by Filipo S. Perotto, 
+but it includes code from other public available packages.
+
+Development Lead
+~~~~~~~~~~~~~~~~
+
+- Filipo S. Perotto <filipo.perotto@onera.fr>
+- Aymane Ouhabi
+- Melvine Nargeot

@@ -1,0 +1,6 @@
+SMPyBandits
+numpy
+scipy
+pandas
+matplotlib
+tqdm
