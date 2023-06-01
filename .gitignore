@@ -6,6 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
+#pickle files
+*.pickle
+
+#draft folder
+notebooks/drafts/
+
+#output folder
+output/
+
 # Distribution / packaging
 .Python
 build/
