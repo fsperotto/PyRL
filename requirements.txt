@@ -1,7 +1,8 @@
 numpy
+matplotlib
+tqdm
 scipy
 pandas
 ray
 SMPyBandits
-matplotlib
-tqdm
+gymnasium

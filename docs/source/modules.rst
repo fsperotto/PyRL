@@ -1,7 +1,7 @@
-srl
-===
+pyrl
+====
 
 .. toctree::
    :maxdepth: 4
 
-   srl
+   pyrl

@@ -1,43 +1,59 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Naive RL
+   
+"""
+
+__version__ = "0.0.1"
+__author__ = "Filipo S. Perotto, Aymane Ouhabi, Melvine Nargeot"
+__license__ = "MIT"
+__status__ = "Development"
+
+################
+
 import math
 from math import sin, cos, atan, sqrt
 import numpy as np
 
 from random import sample, randint, randrange, random
 
+from .._base import Agent
+
 ############################################################################
 
-class RandomAgent:
+class RandomAgent(Agent):
+    """
+    Random Agent Class
     
-    def __init__(self, problem):
-        self.problem = problem
+    """
+    
+    def __init__(self, A):
+        self.A = A
         
-    def choose(self):
-        return [randint(-1,+1) for n in self.problem.art_num_states]
-
-    def update(self):
-        pass
-    
     def act(self):
-        self.choose()
-        self.problem.update(self.action)
-        self.update()
+        return [randint(a.size) for a in self.A]
+        
+
     
 ############################################################################
 
-class QLearningAgent:
+class QLearningAgent(Agent):
 
-    def __init__(self, problem, alpha=0.5, gamma=0.9, epsilon=0.1):
-        self.problem = problem
+    def __init__(self, S, A, alpha=0.5, gamma=0.9, epsilon=0.1):
+        self.S = S
+        self.A = A
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
         self.reset()
 
-    def reset(self):
+    def reset(self, state):
         self.modified = False
-        self.state = self.problem.cur_flat_state()
-        self.action = self.problem.cur_flat_action()
-        self.reward = self.problem.last_reward
+        self.state = state
+        self.action = None
+        self.reward = 0.0
         self.q_values = np.zeros(shape=(self.problem.num_flat_states, self.problem.num_flat_actions) )
         
     #Q-Learning updating

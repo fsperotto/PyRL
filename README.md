@@ -1,29 +1,34 @@
-# SRL
-Survival and Safe Reinforcement Learning and Gambler Bandits
+# PyRL
+
+PyRL is a Python Platform for Reinforcement Learning that integrates with many other state of the art RL packages, including the Deep Neural Network based methods.
+
+It is specially designed to include Safe and Survival Reinforcement Learning methods, but also Multi-Armed Bandits, Stochastic Gambling Processes, Dynamic Programming, Classical Planning.
+
 
 ## Gambling Processes
 
 Python scripts and Jupyter notebooks concerning: Pascal's Triangle, Catalan's Triangle, Gambler's Ruin, Decisional Gambling Processes, Multi-Armed Bandits, Survival Bandits, Multi-Armed Gambler, Survival Decision Processes, and Reinforcement Learning
 
 
-
-
-
 ## Project Structure
 
-SRL                         --> project_name
+pyrl                        --> project_name
 
 ├── docs                    --> auto docs using sphinx
 
-#│   ├── make.bat
+│   ├── make.bat            --> build docs from source into build (windows)
 
-#│   ├── Makefile
+│   ├── Makefile            --> build docs from source into build (linux)
 
-#│   └── source
+│   ├── build
 
-#│       ├── conf.py
+│       └── index.html
 
-#│       └── index.rst
+│   └── source
+
+│       ├── conf.py
+
+│       └── index.rst
 
 ├── examples                --> .py use case examples
 
@@ -35,7 +40,7 @@ SRL                         --> project_name
 
 ├── src                     --> SCRIPTS SOURCE CODE
 
-│   └── srl                 --> package_name
+│   └── pyrl                --> package_name
 
         ├── gr.py
 		
@@ -59,7 +64,7 @@ SRL                         --> project_name
 
 ├── LICENSE.txt
 
-#├── MANIFEST.in
+├── MANIFEST.in					--> list of data files to be included
 
 ├── README.md
 

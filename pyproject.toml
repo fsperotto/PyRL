@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "SRL"
+name = "pyrl"
 version = "0.0.1"
 authors = [
   {name="Filipo STUDZINSKI PEROTTO", email="filipo.perotto@onera.fr"},
@@ -18,11 +18,22 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+	'numpy',
+	'scipy',
+	'matplotlib',
+	'pandas',
+	'SMPyBandits',
+	'tqdm'
+]
 
 [project.urls]
-"Homepage" = "https://github.com/fsperotto/srl"
-"Bug Tracker" = "https://github.com/fsperotto/srl/issues"
+"Homepage" = "https://github.com/fsperotto/pyrl"
+"Bug Tracker" = "https://github.com/fsperotto/pyrl/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["srl", "srl.mab", "srl.gr", "srl.mdp"]
+packages = ["pyrl", "pyrl.mab", "pyrl.mdp"]
+
+#[tool.setuptools.packages.find]
+#where = ["src"]

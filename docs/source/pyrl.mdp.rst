@@ -1,21 +1,21 @@
-srl.mdp package
-===============
+pyrl.mdp package
+================
 
 Submodules
 ----------
 
-srl.mdp.mdp module
-------------------
+pyrl.mdp.mdp module
+-------------------
 
-.. automodule:: srl.mdp.mdp
+.. automodule:: pyrl.mdp.mdp
    :members:
    :undoc-members:
    :show-inheritance:
 
-srl.mdp.moving\_box module
---------------------------
+pyrl.mdp.moving\_box module
+---------------------------
 
-.. automodule:: srl.mdp.moving_box
+.. automodule:: pyrl.mdp.moving_box
    :members:
    :undoc-members:
    :show-inheritance:
@@ -23,7 +23,7 @@ srl.mdp.moving\_box module
 Module contents
 ---------------
 
-.. automodule:: srl.mdp
+.. automodule:: pyrl.mdp
    :members:
    :undoc-members:
    :show-inheritance:

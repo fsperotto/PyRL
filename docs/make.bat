@@ -7,8 +7,14 @@ REM Command file for Sphinx documentation
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
+
+if "%SPHINXAPIDOC%" == "" (
+	set SPHINXAPIDOC=sphinx-apidoc
+)
+
 set SOURCEDIR=source
 set BUILDDIR=build
+set PACKAGEDIR=../src/pyrl
 
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
@@ -23,17 +29,21 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
-set ARG=%1
+echo Calling sphinx-apidoc...
+%SPHINXAPIDOC% -o %SOURCEDIR% %PACKAGEDIR%
+
+set MODE=%1
 
 if "%1" == "" (
-	%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
-	set	ARG=html
+REM	%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+	set	MODE=html
 )
 
-%SPHINXBUILD% -M %ARG% %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
-
+echo Calling sphinx-build...
+%SPHINXBUILD% -M %MODE% %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 
 :end
-REM popd
+
+popd
 
 pause

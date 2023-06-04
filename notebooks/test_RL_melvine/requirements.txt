@@ -1,4 +1,6 @@
 pymdptoolbox
+accel-brain-base
+mxnet
 dm-acme[jax,tf,envs]
 ale-py
 mujoco-py
