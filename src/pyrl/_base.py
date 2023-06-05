@@ -58,18 +58,20 @@ class Agent():
         last received reward.
     """
     
-    def __init__(self, states=[2], actions=[2]):
+    def __init__(self, observation_space, action_space, initial_observation=None):
         """Agent Constructor. The dimensions concerning observable states and actions must be informed."""
         #observations (what the agent perceives from the environment state)
-        self.states  = states  if isinstance(states, Iterable)  else  [states]
-        self.num_state_vars = len(states)
-        self.num_flat_states = np.prod(self.states)
+        #self.states  = states  if isinstance(states, Iterable)  else  [states]
+        #self.num_state_vars = len(states)
+        #self.num_flat_states = np.prod(self.states)
         #actions
-        self.actions = actions if isinstance(actions, Iterable) else  [actions]
-        self.num_action_vars = len(actions)
-        self.num_flat_actions = np.prod(self.actions)
+        #self.actions = actions if isinstance(actions, Iterable) else  [actions]
+        #self.num_action_vars = len(actions)
+        #self.num_flat_actions = np.prod(self.actions)
         #reset
-        self.reset()
+        self.observation_space  = observation_space
+        self.action_space = action_space
+        self.reset(initial_observation)
         
     def reset(self, s, reset_knowledge=True):
         """
@@ -88,7 +90,8 @@ class Agent():
         self.s = s  if isinstance(s, Iterable)  else  [s]
         self.r = 0.0
         #next chosen action
-        self.a = [None for _ in range(self.num_action_vars)] 
+        #self.a = [None for _ in range(self.num_action_vars)] 
+        self.a = self.action_space.sample()
 
     def act(self) -> list :
         """
@@ -149,26 +152,67 @@ class Sim():
     
     """
     
-    def __init__(self, agents, envs, episode_horizon=100, num_episodes=1, num_simulations=1):
+    def __init__(self, agents, envs, episode_horizon=100, num_episodes=1, num_simulations=1,
+                 episode_finished_callback=None, simulation_finished_callback=None, round_finished_callback=None):
         self.agents = agents  if isinstance(agents, Iterable)  else  [agents]
         self.envs   = envs    if isinstance(envs, Iterable)    else  [envs]
+        #self.logger = logger
         self.episode_horizon = episode_horizon
         self.num_episodes = num_episodes
         self.num_simulations = num_simulations
+        self.round_finished_callback = round_finished_callback
+        self.episode_finished_callback = episode_finished_callback
+        self.simulation_finished_callback = simulation_finished_callback
         
     def reset(self):
         pass
 
-    def restart(self):
-        pass
 
     def run(self, episode_horizon=None, num_episodes=None, num_simulations=None):
+        
         episode_horizon = episode_horizon  if  episode_horizon is not None else self.episode_horizon 
         num_episodes = num_episodes  if  num_episodes is not None  else  self.num_episodes
         num_simulations = num_simulations  if  num_simulations is not None   else  self.num_simulations
         
-        for i in range(num_simulations):
-            for j in range(num_episodes):
-                for t in range(1, episode_horizon+1):
-                    pass
-        
+        for env in self.envs:
+            for agent in self.agents:
+                                
+                for i in range(num_simulations):
+                
+                    observation, info = env.reset()
+                    agent.reset(observation)
+                    
+                    for j in range(num_episodes):
+                        
+                        observation, info = env.reset()
+                        agent.reset(observation, reset_knowledge=False)
+                        
+                        for t in range(1, episode_horizon+1):
+                            
+                            action = agent.act()  # agent policy that uses the observation and info
+                            observation, reward, terminated, truncated, info = env.step(action)
+                            agent.observe(observation, reward)
+                            agent.learn()
+
+                            if self.round_finished_callback is not None:
+                                try:
+                                    self.episode_finished_callback(env, agent)
+                                except Exception as e:
+                                    print(str(e))
+
+                            if terminated or truncated:
+                                break
+                                #observation, info = env.reset()        
+
+                        if self.episode_finished_callback is not None:
+                            try:
+                                self.episode_finished_callback(env, agent)
+                            except Exception as e:
+                                print(str(e))
+                            
+                    if self.simulation_finished_callback is not None:
+                       try:
+                           self.simulation_finished_callback(env, agent)
+                       except Exception as e:
+                            print(str(e))
+                           
