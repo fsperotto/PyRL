@@ -15,7 +15,7 @@ This module implements abstract classes, directly available from PyRL module:
 """
 
 __version__ = "0.0.1"
-__author__ = "Filipo S. Perotto, Aymane Ouhabi, Melvine Nargeot"
+__author__ = "Filipo S. Perotto, Aymane Ouahbi, Melvine Nargeot"
 __license__ = "MIT"
 __status__ = "Development"
 
