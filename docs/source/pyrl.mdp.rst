@@ -1,6 +1,12 @@
 pyrl.mdp package
 ================
 
+.. automodule:: pyrl.mdp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
 Submodules
 ----------
 
@@ -11,6 +17,7 @@ pyrl.mdp.mdp module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 pyrl.mdp.moving\_box module
 ---------------------------
@@ -19,11 +26,13 @@ pyrl.mdp.moving\_box module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
-Module contents
----------------
+pyrl.mdp.rl module
+------------------
 
-.. automodule:: pyrl.mdp
+.. automodule:: pyrl.mdp.rl
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

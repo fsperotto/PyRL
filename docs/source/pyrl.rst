@@ -1,6 +1,12 @@
 pyrl package
 ============
 
+.. automodule:: pyrl
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
 Subpackages
 -----------
 
@@ -13,13 +19,14 @@ Subpackages
 Submodules
 ----------
 
-pyrl.base module
-----------------
+pyrl.\_base module
+------------------
 
-.. automodule:: pyrl.base
+.. automodule:: pyrl._base
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 pyrl.gr module
 --------------
@@ -28,6 +35,7 @@ pyrl.gr module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 pyrl.utils module
 -----------------
@@ -36,11 +44,4 @@ pyrl.utils module
    :members:
    :undoc-members:
    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: pyrl
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   :private-members:
