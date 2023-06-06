@@ -33,29 +33,26 @@ class Agent():
     
     It represents the controller, interacting with the system, also called environment.
     
-    
-
-    Attributes
-    ----------
-    states : list (or iterable)
-        the list of variables that constitute the space of states. 
-        e.g.: [4, 10] means two categorical variables assuming 4 and 10 different values, respectively.
-    actions : list (or iterable)
-        the list of variables that constitute the space of actions. 
-    num_state_vars : int
-        number of variables that represent the state space.
-    num_action_vars : int
-        number of variables that represent the action space.
-    num_flat_states : int
-        number of possible flat states (all the different combinations of state variables values)
-    num_flat_actions : int
-        number of possible flat actions (all the different combinations of action variables values, i.e. joint actions)
-    t : int
-        the current time-step or round during execution, $t \in \mathbb{N}$.
-    s : list
-        current state, from the last observation.
-    r : float
-        last received reward.
+        Parameters:
+            states : list (or iterable)
+                the list of variables that constitute the space of states. 
+                e.g.: [4, 10] means two categorical variables assuming 4 and 10 different values, respectively.
+            actions : list (or iterable)
+                the list of variables that constitute the space of actions. 
+            num_state_vars : int
+                number of variables that represent the state space.
+            num_action_vars : int
+                number of variables that represent the action space.
+            num_flat_states : int
+                number of possible flat states (all the different combinations of state variables values)
+            num_flat_actions : int
+                number of possible flat actions (all the different combinations of action variables values, i.e. joint actions)
+            t : int
+                the current time-step or round during execution, $t \in \mathbb{N}$.
+            s : list
+                current state, from the last observation.
+            r : float
+                last received reward.
     """
     
     def __init__(self, observation_space, action_space, initial_observation=None):
@@ -73,7 +70,7 @@ class Agent():
         self.action_space = action_space
         self.reset(initial_observation)
         
-    def reset(self, s, reset_knowledge=True):
+    def reset(self, initial_observation, reset_knowledge=True):
         """
         Reset $t, r, s, a$, and can also reset the learned knowledge.
         
@@ -87,7 +84,7 @@ class Agent():
         #time, or number of elapsed rounds 
         self.t = 0   
         #memory of the current state and last received reward
-        self.s = s  if isinstance(s, Iterable)  else  [s]
+        self.s = initial_observation  if isinstance(initial_observation, Iterable)  else  [initial_observation]
         self.r = 0.0
         #next chosen action
         #self.a = [None for _ in range(self.num_action_vars)] 

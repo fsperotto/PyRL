@@ -636,7 +636,7 @@ class SoftMaxPolicy(IndexedPolicy):
     r"""The Boltzmann , label=NoneExploration (Softmax) index policy, with a constant temperature :math:`\eta_t`.
     - Reference: [Algorithms for the multi-armed bandit problem, V.Kuleshov & D.Precup, JMLR, 2008, §2.1](http://www.cs.mcgill.ca/~vkules/bandits.pdf) and [Boltzmann Exploration Done Right, N.Cesa-Bianchi & C.Gentile & G.Lugosi & G.Neu, arXiv 2017](https://arxiv.org/pdf/1705.10257.pdf).
     - Very similar to Exp3 but uses a Boltzmann distribution.
-      Reference: [Regret Analysis of Stochastic and Nonstochastic Multi-armed Bandit Problems, S.Bubeck & N.Cesa-Bianchi, §3.1](http://sbubeck.com/SurveyBCB12.pdf)
+    Reference: [Regret Analysis of Stochastic and Nonstochastic Multi-armed Bandit Problems, S.Bubeck & N.Cesa-Bianchi, §3.1](http://sbubeck.com/SurveyBCB12.pdf)
     """
 
     def __init__(self, k, eta=0.1, **kwargs):
@@ -657,8 +657,8 @@ class SoftMaxPolicy(IndexedPolicy):
     def evaluate(self):
         r"""Update the trusts probabilities according to the Softmax (ie Boltzmann) distribution on accumulated rewards, and with the temperature :math:`\eta_t`.
         .. math::
-           \mathrm{trusts}'_k(t+1) &= \exp\left( \frac{X_k(t)}{\eta_t N_k(t)} \right) \\
-           \mathrm{trusts}(t+1) &= \mathrm{trusts}'(t+1) / \sum_{k=1}^{K} \mathrm{trusts}'_k(t+1).
+        \mathrm{trusts}'_k(t+1) &= \exp\left( \frac{X_k(t)}{\eta_t N_k(t)} \right) \\
+        \mathrm{trusts}(t+1) &= \mathrm{trusts}'(t+1) / \sum_{k=1}^{K} \mathrm{trusts}'_k(t+1).
         If :math:`X_k(t) = \sum_{\sigma=1}^{t} 1(A(\sigma) = k) r_k(\sigma)` is the sum of rewards from arm k.
         """
         self.v_i[self.i] = np.exp(self.mu_i[self.i] / self.eta)
@@ -737,7 +737,7 @@ class GamblerUCBPolicy(UCBPolicy):
 ################################################################################
 
 class ThompsonPolicy(IndexedPolicy):
-    r"""The Thompson (Bayesian) index policy.
+    """The Thompson (Bayesian) index policy.
     - By default, it uses a Beta posterior (:class:`Policies.Posterior.Beta`), one by arm.
     - Prior is initially flat, i.e., :math:`a=\alpha_0=1` and :math:`b=\beta_0=1`.
     - Reference: [Thompson - Biometrika, 1933].
@@ -756,11 +756,11 @@ class ThompsonPolicy(IndexedPolicy):
         return "Thompson-Sampling"
                   
     def evaluate(self):
-        r""" Compute the current index, at time t and after :math:`N_k(t)` pulls of arm k, 
+        """ Compute the current index, at time t and after :math:`N_k(t)` pulls of arm k, 
         giving :math:`S_k(t)` rewards of 1, by sampling from the Beta posterior:
         .. math::
-            A(t) &\sim U(\arg\max_{1 \leq k \leq K} I_k(t)),\\
-            I_k(t) &\sim \mathrm{Beta}(1 + \tilde{S_k}(t), 1 + \tilde{N_k}(t) - \tilde{S_k}(t)).
+        A(t) &\sim U(\arg\max_{1 \leq k \leq K} I_k(t)),\\
+        I_k(t) &\sim \mathrm{Beta}(1 + \tilde{S_k}(t), 1 + \tilde{N_k}(t) - \tilde{S_k}(t)).
         """
         for i in range(self.k):
             #v_alpha = self.s_i[i] + 1
@@ -786,8 +786,8 @@ class GamblerThompsonPolicy(ThompsonPolicy):
         r""" Compute the current index, at time t and after :math:`N_k(t)` pulls of arm k, 
         giving :math:`S_k(t)` rewards of 1, by sampling from the Beta posterior:
         .. math::
-            A(t) &\sim U(\arg\max_{1 \leq k \leq K} I_k(t)),\\
-            I_k(t) &\sim \mathrm{Beta}(1 + \tilde{S_k}(t), 1 + \tilde{N_k}(t) - \tilde{S_k}(t)).
+        A(t) &\sim U(\arg\max_{1 \leq k \leq K} I_k(t)),\\
+        I_k(t) &\sim \mathrm{Beta}(1 + \tilde{S_k}(t), 1 + \tilde{N_k}(t) - \tilde{S_k}(t)).
         """
         c = 0.0001
         #factor (for prior) is near from zero when budget is very low, and approaches 1 when budget is high
@@ -923,8 +923,7 @@ class BernKLUCBPolicy(IndexedPolicy):
         - ``upperbound``, ``lowerbound=float('-inf')``: the known bound of the values ``x``,
         - ``precision=1e-6``: the threshold from where to stop the research,
         - ``max_iterations=50``: max number of iterations of the loop (safer to bound it to reduce time complexity).
-        .. math::
-            \mathrm{klucb}(x, d) \simeq \sup_{\mathrm{lowerbound} \leq y \leq \mathrm{upperbound}} \{ y : \mathrm{kl}(x, y) < d \}.
+        .. math:: \mathrm{klucb}(x, d) \simeq \sup_{\mathrm{lowerbound} \leq y \leq \mathrm{upperbound}} \{ y : \mathrm{kl}(x, y) < d \}.
         .. note:: It uses a **bisection search**, and one call to ``kl`` for each step of the bisection search.
         For example, for :func:`klucbBern`, the two steps are to first compute an upperbound (as precise as possible) and the compute the kl-UCB index:
         >>> x, d = 0.9, 0.2   # mean x, exploration term d
@@ -944,10 +943,9 @@ class BernKLUCBPolicy(IndexedPolicy):
 
     def evaluate(self):
         r""" Compute the current index, at time t and after :math:`N_k(t)` pulls of arm k:
-        .. math::
-            \hat{\mu}_k(t) &= \frac{X_k(t)}{N_k(t)}, \\
-            U_k(t) &= \sup\limits_{q \in [a, b]} \left\{ q : \mathrm{kl}(\hat{\mu}_k(t), q) \leq \frac{c \log(t)}{N_k(t)} \right\},\\
-            I_k(t) &= U_k(t).
+        .. math:: \hat{\mu}_k(t) &= \frac{X_k(t)}{N_k(t)}, \\
+        U_k(t) &= \sup\limits_{q \in [a, b]} \left\{ q : \mathrm{kl}(\hat{\mu}_k(t), q) \leq \frac{c \log(t)}{N_k(t)} \right\},\\
+        I_k(t) &= U_k(t).
         If rewards are in :math:`[a, b]` (default to :math:`[0, 1]`) and :math:`\mathrm{kl}(x, y)` is the Kullback-Leibler divergence between two distributions of means x and y (see :mod:`Arms.kullback`),
         and c is the parameter (default to 1).
         """
@@ -963,274 +961,281 @@ class BernKLUCBPolicy(IndexedPolicy):
                 self.v_i[i] = self._klucbBern(mu_i, c * log(self.t) / n_i)
 
 ################################################################################
-            
-def TODO():
-    
-    class GaussianBayesUCBPolicy(IndexPolicy):
-        """ The Gaussian-Bayes-UCB policy.
-        - uses a Normal Inverse Gamma conjugate prior for Normal likelihood.
-        """
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+# TO FIX !!!!!
+################################################################################
 
-        def __init__(self, k, v_ini=None, w=1, label=None):
-            super().__init__(k, v_ini=v_ini, w=w, label=label)
-            if label is None:
-                self.label = "Bayes-UCB (Normal)"
+"""
+class GaussianBayesUCBPolicy(IndexPolicy):
+    # The Gaussian-Bayes-UCB policy.
+    #- uses a Normal Inverse Gamma conjugate prior for Normal likelihood.
+    #
 
-        def observe(self, r):
-            r""" Compute the current index, at time t and after :math:`N_k(t)` pulls of arm k, giving :math:`S_k(t)` rewards, by taking the :math:`1 - \frac{1}{t}` quantile from the Normal-Inverse-Gamma posterior:
-            .. math:: I_k(t) = \mathrm{Quantile}\left(\mathrm{NIG}(1 + S_k(t), 1 + N_k(t) - S_k(t)), 1 - \frac{1}{t}\right).
-            """
+    def __init__(self, k, v_ini=None, w=1, label=None):
+        super().__init__(k, v_ini=v_ini, w=w, label=label)
+        if label is None:
+            self.label = "Bayes-UCB (Normal)"
 
-            super().observe(r)
+    def observe(self, r):
+        #Compute the current index, at time t and after :math:`N_k(t)` pulls of arm k, giving :math:`S_k(t)` rewards, by taking the :math:`1 - \frac{1}{t}` quantile from the Normal-Inverse-Gamma posterior:
+        #.. math:: I_k(t) = \mathrm{Quantile}\left(\mathrm{NIG}(1 + S_k(t), 1 + N_k(t) - S_k(t)), 1 - \frac{1}{t}\right).
+        #
 
-            #t = self.t
-            #q = 1. - (1. / (1 + t))
-            t = max(1.0, self.t)
-            q = 1 - (1 / t)
+        super().observe(r)
 
-            #i = self.i_last
-            for i in range(self.k): 
-                #q = 1. - (1. / (1 + self.n_i[i]))
-                alp = self.s_i[i] + 1
-                bet = self.n_i[i] - self.s_i[i] + 1
-                self.v_i[i] = beta.ppf(q, alp, bet)
+        #t = self.t
+        #q = 1. - (1. / (1 + t))
+        t = max(1.0, self.t)
+        q = 1 - (1 / t)
 
-    ################################################################################
+        #i = self.i_last
+        for i in range(self.k): 
+            #q = 1. - (1. / (1 + self.n_i[i]))
+            alp = self.s_i[i] + 1
+            bet = self.n_i[i] - self.s_i[i] + 1
+            self.v_i[i] = beta.ppf(q, alp, bet)
 
-    # class for the marab algorithm
-    class MaRaBPolicy(IndexPolicy):
+################################################################################
 
-        def __init__(self, k, v_ini=None, w=1, label=None, alpha=0.05, c=1e-6):
-            super().__init__(k, v_ini=v_ini, w=w, label=label)
-            self.alpha = alpha
-            self.c = c
-            self.reward_samples = [np.array([0.0]) for a in range(k)]
-            if label is None:
-                self.label = f"Empirical-MARAB ($\alpha={self.alpha}$)"
+# class for the marab algorithm
+class MaRaBPolicy(IndexPolicy):
 
-        def reset(self):
-            super().reset()
-            self.reward_samples = [np.array([0.0]) for a in range(self.k)]
+    def __init__(self, k, v_ini=None, w=1, label=None, alpha=0.05, c=1e-6):
+        super().__init__(k, v_ini=v_ini, w=w, label=label)
+        self.alpha = alpha
+        self.c = c
+        self.reward_samples = [np.array([0.0]) for a in range(k)]
+        if label is None:
+            self.label = f"Empirical-MARAB ($\alpha={self.alpha}$)"
 
-        def observe(self, r):
-            super().observe(r)
-            self.reward_samples[self.i_last] = np.sort(np.append(self.reward_samples[self.i_last], [r]))
-            for i in range(self.k): 
-                # calculating empirical cvar
-                e = np.ceil(self.alpha*self.n_i[i]).astype(int)
-                empirical_cvar = self.reward_samples[i][:e].mean()
-                # calculating lower confidence bound
-                lcb = np.sqrt(np.log(np.ceil(self.alpha*self.t))/self.n_i[i])
-                # adding score to scores list
-                self.v_i[i] = empirical_cvar - self.c * lcb
+    def reset(self):
+        super().reset()
+        self.reward_samples = [np.array([0.0]) for a in range(self.k)]
 
-    ################################################################################
+    def observe(self, r):
+        super().observe(r)
+        self.reward_samples[self.i_last] = np.sort(np.append(self.reward_samples[self.i_last], [r]))
+        for i in range(self.k): 
+            # calculating empirical cvar
+            e = np.ceil(self.alpha*self.n_i[i]).astype(int)
+            empirical_cvar = self.reward_samples[i][:e].mean()
+            # calculating lower confidence bound
+            lcb = np.sqrt(np.log(np.ceil(self.alpha*self.t))/self.n_i[i])
+            # adding score to scores list
+            self.v_i[i] = empirical_cvar - self.c * lcb
 
-
-    class AlarmedAlphaUCBPolicy(AlphaUCBPolicy, AlarmedPolicy):
-
-        def __init__(self, k, v_ini=None, w=1, label=None, alpha=2.0, b_0=None, omega=None):
-            AlphaUCBPolicy.__init__(self, k, v_ini=v_ini, w=w, alpha=alpha, label=label)
-            AlarmedPolicy.__init__(self, k, b_0=b_0, omega=omega)
-            if label is None:
-                self.label = f"Alarmed-UCB($\omega={self.omega}$)"
-
-        def reset(self):
-            AlphaUCBPolicy.reset(self)
-            AlarmedPolicy.reset(self)
-
-        def observe(self, r):
-            AlphaUCBPolicy.observe(self, r)
-            AlarmedPolicy.observe(self, r)
+################################################################################
 
 
+class AlarmedAlphaUCBPolicy(AlphaUCBPolicy, AlarmedPolicy):
 
-    class AlarmedBernKLUCBPolicy(BernKLUCBPolicy, AlarmedPolicy):
+    def __init__(self, k, v_ini=None, w=1, label=None, alpha=2.0, b_0=None, omega=None):
+        AlphaUCBPolicy.__init__(self, k, v_ini=v_ini, w=w, alpha=alpha, label=label)
+        AlarmedPolicy.__init__(self, k, b_0=b_0, omega=omega)
+        if label is None:
+            self.label = f"Alarmed-UCB($\omega={self.omega}$)"
 
-        def __init__(self, k, v_ini=None, w=1, label=None, b_0=None, omega=1.0):
-            BernKLUCBPolicy.__init__(self, k, v_ini=v_ini, w=w, label=label)
-            AlarmedPolicy.__init__(self, k, b_0=b_0, w=w)
-            self.omega = omega   #safety-critical warning threshold for budget level
-            if label is None:
-                self.label = f"Alarmed-KL-UCB($\omega={self.omega}$)"
+    def reset(self):
+        AlphaUCBPolicy.reset(self)
+        AlarmedPolicy.reset(self)
 
-        def reset(self):
-            BernKLUCBPolicy.reset(self)
-            AlarmedPolicy.reset(self)
-
-        def observe(self, r):
-            BernKLUCBPolicy.observe(self, r)
-            AlarmedPolicy.observe(self, r)
+    def observe(self, r):
+        AlphaUCBPolicy.observe(self, r)
+        AlarmedPolicy.observe(self, r)
 
 
 
-    class AlarmedEpsilonGreedyPolicy(EpsilonGreedyPolicy, AlarmedPolicy):
+class AlarmedBernKLUCBPolicy(BernKLUCBPolicy, AlarmedPolicy):
 
-        def __init__(self, k, w=1, label=None, b_0=None, omega=1.0, eps=0.9):
-            EpsilonGreedyPolicy.__init__(self, k, w=w, label=label, eps=eps)
-            AlarmedPolicy.__init__(self, k, b_0=b_0, w=w)
-            self.omega = omega   #safety-critical warning threshold for budget level
-            if label is None:
-                self.label = f"Alarmed-$\\epsilon$-greedy($\\epsilon=" + str(round(self.eps,2)) + "\omega=" + str(round(self.omega, 2)) + "$)"
+    def __init__(self, k, v_ini=None, w=1, label=None, b_0=None, omega=1.0):
+        BernKLUCBPolicy.__init__(self, k, v_ini=v_ini, w=w, label=label)
+        AlarmedPolicy.__init__(self, k, b_0=b_0, w=w)
+        self.omega = omega   #safety-critical warning threshold for budget level
+        if label is None:
+            self.label = f"Alarmed-KL-UCB($\omega={self.omega}$)"
 
-        def reset(self):
-            EpsilonGreedyPolicy.reset(self)
-            AlarmedPolicy.reset(self)
+    def reset(self):
+        BernKLUCBPolicy.reset(self)
+        AlarmedPolicy.reset(self)
 
-        def observe(self, r):
-            EpsilonGreedyPolicy.observe(self, r)
-            AlarmedPolicy.observe(self, r)
-
-
-
-    #####################################################
+    def observe(self, r):
+        BernKLUCBPolicy.observe(self, r)
+        AlarmedPolicy.observe(self, r)
 
 
-    class BanditGamblerPolicy(EmpiricalMeansPolicy, BudgetedPolicy):
 
-        def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
-            #super().__init__(k, v_ini=v_ini, w=w, d=d, b_0=b_0)
-            EmpiricalMeansPolicy.__init__(self, k, v_ini=v_ini, w=w, label=label)
-            BudgetedPolicy.__init__(self, k, b_0=b_0, w=w)
-            if label is None:
-                self.label = "Bandit-Gambler"
+class AlarmedEpsilonGreedyPolicy(EpsilonGreedyPolicy, AlarmedPolicy):
 
-        #@jit
-        def ruin_estimated_prob(self, i):
+    def __init__(self, k, w=1, label=None, b_0=None, omega=1.0, eps=0.9):
+        EpsilonGreedyPolicy.__init__(self, k, w=w, label=label, eps=eps)
+        AlarmedPolicy.__init__(self, k, b_0=b_0, w=w)
+        self.omega = omega   #safety-critical warning threshold for budget level
+        if label is None:
+            self.label = f"Alarmed-$\\epsilon$-greedy($\\epsilon=" + str(round(self.eps,2)) + "\omega=" + str(round(self.omega, 2)) + "$)"
+
+    def reset(self):
+        EpsilonGreedyPolicy.reset(self)
+        AlarmedPolicy.reset(self)
+
+    def observe(self, r):
+        EpsilonGreedyPolicy.observe(self, r)
+        AlarmedPolicy.observe(self, r)
+
+
+
+#####################################################
+
+
+class BanditGamblerPolicy(EmpiricalMeansPolicy, BudgetedPolicy):
+
+    def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
+        #super().__init__(k, v_ini=v_ini, w=w, d=d, b_0=b_0)
+        EmpiricalMeansPolicy.__init__(self, k, v_ini=v_ini, w=w, label=label)
+        BudgetedPolicy.__init__(self, k, b_0=b_0, w=w)
+        if label is None:
+            self.label = "Bandit-Gambler"
+
+    #@jit
+    def ruin_estimated_prob(self, i):
+        n_i = self.n_i[i]
+        x_i = self.s_i[i]
+        y_i = n_i - self.s_i[i]
+        b = max(1.0, self.b)
+        return beta.cdf(0.5, x_i+1, y_i+1) + integral(lambda p, x, y, b : ((1-p)/p)**b * beta.pdf(p, x+1, y+1), 0.5, 1.0, (x_i, y_i, b))[0]
+
+    def surv_estimated_prob(self, i):
+        n_i = self.n_i[i]
+        x_i = self.s_i[i]
+        y_i = n_i - x_i
+        b = max(1.0, self.b)
+        return integral(lambda p, x, y, b : (1-((1-p)/p)**b) * beta.pdf(p, x+1, y+1), 0.5, 1.0, (x_i, y_i, b))[0]
+
+    def reset(self):
+        #super().reset()
+        EmpiricalMeansPolicy.reset(self)
+        BudgetedPolicy.reset(self)
+
+    def _update(self, r):
+        #super()._update(r)
+        EmpiricalMeansPolicy._update(self, r)
+        BudgetedPolicy._update(self, r)
+
+    def _evaluate(self):
+        i = self.i_last
+        #self.v_i[i] = 1.0 - self.ruin_estimated_prob(i)
+        self.v_i[i] = self.surv_estimated_prob(i)
+
+
+################################################################################
+
+class BanditGamblerUCBPolicy(BanditGamblerPolicy):
+
+    def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
+        super().__init__(k, v_ini=v_ini, w=w, label=label)
+        Budgeted.__init__(self, k, b_0=b_0, w=w)
+        if label is None:
+            self.label = "Bandit-Gambler-UCB"
+
+    def _evaluate(self):
+        for i in range(self.k):
+            self.v_i[i] = 1.0 - self.ruin_estimated_prob(i)
+
+    def ruin_estimated_prob(self, i):
+        b = max(1.0, self.b)
+        factor = np.log(self.t)/self.t
+        n_i = self.n_i[i]
+        x_i = self.s_i[i]
+        y_i = n_i - self.s_i[i]
+        return beta.cdf(0.5, x_i+1, y_i+1) + integral(lambda p, x, y, b : ((1-p)/p)**b * beta.pdf(p, x*factor+1, y*factor+1), 0.5, 1.0, (x_i, y_i, b))[0]
+
+################################################################################
+
+class PositiveGamblerUCB(EmpiricalMeansPolicy, Budgeted):
+
+    def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
+        #super().__init__(k, v_ini=v_ini, w=w, d=d, b_0=b_0)
+        EmpiricalMeansPolicy.__init__(self, k, v_ini=v_ini, w=w, label=label)
+        Budgeted.__init__(self, k, b_0=b_0, w=w)
+        if label is None:
+            self.label = "Positive-Gambler"
+
+    def reset(self):
+        #super().reset()
+        EmpiricalMeansPolicy.reset(self)
+        Budgeted.reset(self)
+
+    def _update(self, r):
+        #super()._update(r)
+        EmpiricalMeansPolicy._update(self, r)
+        Budgeted._update(self, r)
+
+    def _evaluate(self):
+        t = self.t
+        b = max(1.0, self.b)
+        for i in range(self.k):
             n_i = self.n_i[i]
+            mu_i = self.mu_i[i]
             x_i = self.s_i[i]
             y_i = n_i - self.s_i[i]
-            b = max(1.0, self.b)
-            return beta.cdf(0.5, x_i+1, y_i+1) + integral(lambda p, x, y, b : ((1-p)/p)**b * beta.pdf(p, x+1, y+1), 0.5, 1.0, (x_i, y_i, b))[0]
-
-        def surv_estimated_prob(self, i):
-            n_i = self.n_i[i]
-            x_i = self.s_i[i]
-            y_i = n_i - x_i
-            b = max(1.0, self.b)
-            return integral(lambda p, x, y, b : (1-((1-p)/p)**b) * beta.pdf(p, x+1, y+1), 0.5, 1.0, (x_i, y_i, b))[0]
-
-        def reset(self):
-            #super().reset()
-            EmpiricalMeansPolicy.reset(self)
-            BudgetedPolicy.reset(self)
-
-        def _update(self, r):
-            #super()._update(r)
-            EmpiricalMeansPolicy._update(self, r)
-            BudgetedPolicy._update(self, r)
-
-        def _evaluate(self):
-            i = self.i_last
-            #self.v_i[i] = 1.0 - self.ruin_estimated_prob(i)
-            self.v_i[i] = self.surv_estimated_prob(i)
-
-
-    ################################################################################
-
-    class BanditGamblerUCBPolicy(BanditGamblerPolicy):
-
-        def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
-            super().__init__(k, v_ini=v_ini, w=w, label=label)
-            Budgeted.__init__(self, k, b_0=b_0, w=w)
-            if label is None:
-                self.label = "Bandit-Gambler-UCB"
-
-        def _evaluate(self):
-            for i in range(self.k):
-                self.v_i[i] = 1.0 - self.ruin_estimated_prob(i)
-
-        def ruin_estimated_prob(self, i):
-            b = max(1.0, self.b)
-            factor = np.log(self.t)/self.t
-            n_i = self.n_i[i]
-            x_i = self.s_i[i]
-            y_i = n_i - self.s_i[i]
-            return beta.cdf(0.5, x_i+1, y_i+1) + integral(lambda p, x, y, b : ((1-p)/p)**b * beta.pdf(p, x*factor+1, y*factor+1), 0.5, 1.0, (x_i, y_i, b))[0]
-
-    ################################################################################
-
-    class PositiveGamblerUCB(EmpiricalMeansPolicy, Budgeted):
-
-        def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
-            #super().__init__(k, v_ini=v_ini, w=w, d=d, b_0=b_0)
-            EmpiricalMeansPolicy.__init__(self, k, v_ini=v_ini, w=w, label=label)
-            Budgeted.__init__(self, k, b_0=b_0, w=w)
-            if label is None:
-                self.label = "Positive-Gambler"
-
-        def reset(self):
-            #super().reset()
-            EmpiricalMeansPolicy.reset(self)
-            Budgeted.reset(self)
-
-        def _update(self, r):
-            #super()._update(r)
-            EmpiricalMeansPolicy._update(self, r)
-            Budgeted._update(self, r)
-
-        def _evaluate(self):
-            t = self.t
-            b = max(1.0, self.b)
-            for i in range(self.k):
-                n_i = self.n_i[i]
-                mu_i = self.mu_i[i]
-                x_i = self.s_i[i]
-                y_i = n_i - self.s_i[i]
-                if self.n_i[i] == 0:
-                    self.v_i[i] = float('+inf')
-                else:
-                    self.v_i[i] = 1 - beta.cdf(0.5, x_i+1, y_i+1) + sqrt((2 * log(b)) / n_i)
-
-    ################################################################################
-
-    class BGP(BanditGamblerPolicy):
-
-        #@jit
-        def surv_estimated_prob(self, i):
-            n_i = self.n_i[i]
-            x_i = self.s_i[i]
-            y_i = n_i - x_i
-            b = max(1.0, self.b)
-            #return integral(lambda p, x, y, b : (1-((1-p)/p)**b) * beta.pdf(p, x+1, y+1), 0.5, 1.0, (x_i, y_i, b))[0]
-            return integral(lambda p, x, y, b : p * beta.pdf(p, x+1, y+1), 0.5, 1.0, (x_i, y_i, b))[0]    #simplify to linear
-
-    ################################################################################
-
-    class BG_UCB(BanditGamblerPolicy):
-
-        def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
-            super().__init__(k, v_ini=v_ini, w=w, label=label, b_0=b_0)
-            if label is None:
-                self.label = "Bandit-Gambler-UCB"
-
-        def ruin_estimated_prob(self, i):
-            n_i = self.n_i[i]
-            x_i = self.s_i[i]
-            y_i = n_i - x_i
-            b = max(1.0, self.b)
-            factor = np.log(self.t)/self.t
-            return beta.cdf(0.5, x_i+1, y_i+1) + integral(lambda p, x, y, b : ((1-p)/p)**b * beta.pdf(p, x*factor+1, y*factor+1), 0.5, 1.0, (x_i, y_i, b))[0]
-
-    ################################################################################
-
-    class BG_Pos(BanditGamblerPolicy):
-
-        def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
-            super().__init__(k, v_ini=v_ini, w=w, label=label, b_0=b_0)
-            if label is None:
-                self.label = "Positive-Gambler"
-
-        def _evaluate(self):
-            i = self.i_last
-            n_i = self.n_i[i]
-            mu_i = self.s_i[i] / n_i
-            t = self.t
-            x_i = self.s_i[i]
-            y_i = n_i - self.s_i[i]
-            b = max(1.0, self.b)
             if self.n_i[i] == 0:
                 self.v_i[i] = float('+inf')
             else:
                 self.v_i[i] = 1 - beta.cdf(0.5, x_i+1, y_i+1) + sqrt((2 * log(b)) / n_i)
 
+################################################################################
+
+class BGP(BanditGamblerPolicy):
+
+    #@jit
+    def surv_estimated_prob(self, i):
+        n_i = self.n_i[i]
+        x_i = self.s_i[i]
+        y_i = n_i - x_i
+        b = max(1.0, self.b)
+        #return integral(lambda p, x, y, b : (1-((1-p)/p)**b) * beta.pdf(p, x+1, y+1), 0.5, 1.0, (x_i, y_i, b))[0]
+        return integral(lambda p, x, y, b : p * beta.pdf(p, x+1, y+1), 0.5, 1.0, (x_i, y_i, b))[0]    #simplify to linear
+
+################################################################################
+
+class BG_UCB(BanditGamblerPolicy):
+
+    def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
+        super().__init__(k, v_ini=v_ini, w=w, label=label, b_0=b_0)
+        if label is None:
+            self.label = "Bandit-Gambler-UCB"
+
+    def ruin_estimated_prob(self, i):
+        n_i = self.n_i[i]
+        x_i = self.s_i[i]
+        y_i = n_i - x_i
+        b = max(1.0, self.b)
+        factor = np.log(self.t)/self.t
+        return beta.cdf(0.5, x_i+1, y_i+1) + integral(lambda p, x, y, b : ((1-p)/p)**b * beta.pdf(p, x*factor+1, y*factor+1), 0.5, 1.0, (x_i, y_i, b))[0]
+
+################################################################################
+
+class BG_Pos(BanditGamblerPolicy):
+
+    def __init__(self, k, v_ini=None, w=1, label=None, b_0=None):
+        super().__init__(k, v_ini=v_ini, w=w, label=label, b_0=b_0)
+        if label is None:
+            self.label = "Positive-Gambler"
+
+    def _evaluate(self):
+        i = self.i_last
+        n_i = self.n_i[i]
+        mu_i = self.s_i[i] / n_i
+        t = self.t
+        x_i = self.s_i[i]
+        y_i = n_i - self.s_i[i]
+        b = max(1.0, self.b)
+        if self.n_i[i] == 0:
+            self.v_i[i] = float('+inf')
+        else:
+            self.v_i[i] = 1 - beta.cdf(0.5, x_i+1, y_i+1) + sqrt((2 * log(b)) / n_i)
+
+"""
