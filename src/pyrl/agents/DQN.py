@@ -1,5 +1,6 @@
+import pyrl
 from pyrl import Agent
-from pyrl.replay_buffer import ReplayMemory
+import pyrl.replay_buffers
 from collections import namedtuple
 
 import math
@@ -8,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from collections.abc import Iterable
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -50,10 +52,19 @@ class DQNAgent(Agent):
         self.lr = 1e-4
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.lr, amsgrad=True)
 
+    def reset(self, s, reset_knowledge=True):
+        #time, or number of elapsed rounds 
+        self.t = 0
+        #memory of the current state and last received reward
+        self.s = s  if isinstance(s, Iterable)  else  [s]
+        self.r = 0.0
+        #next chosen action
+        #self.a = [None for _ in range(self.num_action_vars)] 
+        self.a = self.action_space.sample()
         
-    def act(self, episode_i):
+    def act(self, t):
         sample = random.random()
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * episode_i / self.eps_decay)
+        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * t / self.eps_decay)
 
         if sample > eps_threshold:
             with torch.no_grad():
@@ -61,6 +72,14 @@ class DQNAgent(Agent):
         else:
             return torch.tensor([[self.action_space.sample()]], device=self.device, dtype=torch.long)
 
+    def observe(self, s, r):
+        """
+            Memorize the observed state and received reward.
+        """
+        self.s = s  if isinstance(s, Iterable)  else  [s]
+        self.r = r
+        self.t += 1
+    
     def learn(self):
         if len(self.replay_buffer) < self.batch_size:
             return
