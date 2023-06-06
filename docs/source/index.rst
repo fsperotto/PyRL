@@ -4,11 +4,13 @@
    contain the root `toctree` directive.
 
 Welcome to PyRL's documentation!
-===============================
+================================
 
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
+   
+   modules
 
 
 Indices and tables

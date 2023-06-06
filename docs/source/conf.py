@@ -19,13 +19,18 @@ sys.path.insert(0, os.path.abspath('../../src/pyrl'))
 
 extensions = [
     'sphinx.ext.githubpages',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.mathjax'
 ]
 
 templates_path = ['_templates']
 exclude_patterns = []
 
+with open("../../requirements.txt", "r") as fh:
+    requirements = fh.read()
+    requirements = requirements.split()
 
+autodoc_mock_imports = ["numpy", "scipy", "numba", "pandas"] + requirements
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

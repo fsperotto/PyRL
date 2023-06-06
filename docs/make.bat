@@ -30,17 +30,16 @@ if errorlevel 9009 (
 )
 
 echo Calling sphinx-apidoc...
-%SPHINXAPIDOC% -o %SOURCEDIR% %PACKAGEDIR%
-
-set MODE=%1
-
-if "%1" == "" (
-REM	%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
-	set	MODE=html
-)
+%SPHINXAPIDOC% -f -o %SOURCEDIR% %PACKAGEDIR% --module-first --private --implicit-namespaces
 
 echo Calling sphinx-build...
-%SPHINXBUILD% -M %MODE% %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+if "%1" == "" (
+	%SPHINXBUILD% -M clean %SOURCEDIR% %BUILDDIR%
+	%SPHINXBUILD% -M %MODE% %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+) else (
+	%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+)
+
 
 :end
 

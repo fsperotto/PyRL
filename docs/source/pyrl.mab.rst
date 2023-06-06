@@ -1,6 +1,12 @@
 pyrl.mab package
 ================
 
+.. automodule:: pyrl.mab
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
 Submodules
 ----------
 
@@ -11,6 +17,7 @@ pyrl.mab.arms module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 pyrl.mab.policies module
 ------------------------
@@ -19,6 +26,7 @@ pyrl.mab.policies module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 pyrl.mab.simulator module
 -------------------------
@@ -27,11 +35,4 @@ pyrl.mab.simulator module
    :members:
    :undoc-members:
    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: pyrl.mab
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   :private-members:

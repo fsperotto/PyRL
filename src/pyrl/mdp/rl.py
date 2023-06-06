@@ -29,11 +29,10 @@ class RandomAgent(Agent):
     
     """
     
-    def __init__(self, A):
-        self.A = A
-        
     def act(self):
-        return [randint(a.size) for a in self.A]
+        self.a = self.action_space.sample()
+        return self.a    
+        
         
 
     
@@ -41,20 +40,21 @@ class RandomAgent(Agent):
 
 class QLearningAgent(Agent):
 
-    def __init__(self, S, A, alpha=0.5, gamma=0.9, epsilon=0.1):
-        self.S = S
-        self.A = A
+    def __init__(self, observation_space, action_space, initial_observation=None, alpha=0.5, gamma=0.9, epsilon=0.1):
+        
+        super.__init__(observation_space, action_space, initial_observation=None)
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
-        self.reset()
 
     def reset(self, state):
+        super.reset(state)
         self.modified = False
         self.state = state
         self.action = None
         self.reward = 0.0
         self.q_values = np.zeros(shape=(self.problem.num_flat_states, self.problem.num_flat_actions) )
+        
         
     #Q-Learning updating
     def update(self):
