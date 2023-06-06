@@ -1,6 +1,6 @@
 import pyrl
 from pyrl import Agent
-import pyrl.replay_buffers
+import pyrl.replay_buffer
 from collections import namedtuple
 
 import math
