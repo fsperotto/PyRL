@@ -67,13 +67,15 @@ class QLearning(Agent):
         self.current_reward = reward
         self.time = self.time + 1
 
-        print(f"Reward at step {self.time} is {self.current_reward}")
+        #print(f"Reward at step {self.time} is {self.current_reward}")
 
         if learn:
             self.learn()
 
     def learn(self) -> None:
         self.Q[self.last_state, self.last_action] = (1 - self.learning_rate) * self.Q[self.last_state, self.last_action] + self.learning_rate * (self.current_reward + self.discount * self.Q[self.current_state, :].max())
+
+        return self.Q[self.last_state, self.last_action]
 
     def builtin_should_explore(self, agent: Agent) -> bool:
         pn = np.random.random()
