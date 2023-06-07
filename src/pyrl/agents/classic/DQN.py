@@ -1,7 +1,7 @@
 import pyrl
 from pyrl import Agent
-import pyrl.replay_buffer
-from collections import namedtuple
+# import pyrl.replay_buffer
+from collections import namedtuple, deque
 
 import math
 import random
@@ -13,7 +13,22 @@ from collections.abc import Iterable
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
+class ReplayMemory(object):
 
+    def __init__(self, capacity):
+        self.memory = deque([], maxlen=capacity)
+
+    def push(self, *args):
+        """Save a transition"""
+        self.memory.append(Transition(*args))
+
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)
+    
+    
 class DQN(nn.Module):
 
     def __init__(self, n_observations, n_actions):
@@ -36,6 +51,7 @@ class DQNAgent(Agent):
     def __init__(self, observation_space, action_space, initial_observation=None,
                  eps_start=0.9, eps_end=0.05, eps_decay=1000,
                  replay_buffer=ReplayMemory(1000), batch_size=128, gamma=0.99,
+                 tau=0.005,
                  ):
         super().__init__(observation_space, action_space, initial_observation=None)
         self.eps_start = eps_start
@@ -43,42 +59,58 @@ class DQNAgent(Agent):
         self.eps_decay = eps_decay
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        self.policy_net = DQN(self.observation_space.shape[0], self.action_space.shape[0]).to(self.device)
-        self.target_net = DQN(self.observation_space.shape[0], self.action_space.shape[0]).to(self.device)
+        print((self.observation_space.shape[0], self.action_space.n))
+        self.policy_net = DQN(self.observation_space.shape[0], self.action_space.n).to(self.device)
+        self.target_net = DQN(self.observation_space.shape[0], self.action_space.n).to(self.device)
         
         self.replay_buffer = replay_buffer
         self.batch_size = batch_size
         self.gamma = gamma
         self.lr = 1e-4
+        self.tau = tau
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.lr, amsgrad=True)
-
+        self.steps_done = 0 # used for epsilon decay over the timesteps and episodes
+        
     def reset(self, s, reset_knowledge=True):
         #time, or number of elapsed rounds 
         self.t = 0
         #memory of the current state and last received reward
-        self.s = s  if isinstance(s, Iterable)  else  [s]
+        # self.s = s  if isinstance(s, Iterable)  else  [s]
+        self.s = s
+        # self.s = torch.tensor(s  if isinstance(s, Iterable)  else  [s], dtype=torch.float32, device=self.device).unsqueeze(0)
+        
         self.r = 0.0
         #next chosen action
         #self.a = [None for _ in range(self.num_action_vars)] 
         self.a = self.action_space.sample()
         
-    def act(self, t):
-        sample = random.random()
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * t / self.eps_decay)
+    def act(self):
+        # global steps_done
 
+        sample = random.random()
+        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
+        self.steps_done += 1
+        
         if sample > eps_threshold:
             with torch.no_grad():
-                return self.policy_net(self.s).max(1)[1].view(1, 1)
+                self.a = self.policy_net(self.s).max(1)[1].view(1, 1)
+                return self.a
         else:
-            return torch.tensor([[self.action_space.sample()]], device=self.device, dtype=torch.long)
+            self.a = torch.tensor([[self.action_space.sample()]], device=self.device, dtype=torch.long)
+            return self.a
 
     def observe(self, s, r):
         """
             Memorize the observed state and received reward.
         """
-        self.s = s  if isinstance(s, Iterable)  else  [s]
+        # self.prev_s = self.s
+        # self.s = s  if isinstance(s, Iterable)  else  [s]
+        self.s = s
+        
         self.r = r
-        self.t += 1
+        
+        # Store the transition in memory
+        # self.replay_buffer.push(self.prev_s, self.a, self.s, self.r)
     
     def learn(self):
         if len(self.replay_buffer) < self.batch_size:
@@ -90,6 +122,7 @@ class DQNAgent(Agent):
 
         # Compute a mask of non-final states and concatenate the batch elements
         # (a final state would've been the one after which simulation ended)
+        # print(batch.next_state)
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                             batch.next_state)), device=self.device, dtype=torch.bool)
         non_final_next_states = torch.cat([s for s in batch.next_state
@@ -116,3 +149,11 @@ class DQNAgent(Agent):
         # In-place gradient clipping
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
+        
+        # Soft update of the target network's weights
+        # θ′ ← τ θ + (1 −τ )θ′
+        target_net_state_dict = self.target_net.state_dict()
+        policy_net_state_dict = self.policy_net.state_dict()
+        for key in policy_net_state_dict:
+            target_net_state_dict[key] = policy_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
+        self.target_net.load_state_dict(target_net_state_dict)
