@@ -43,16 +43,14 @@ class QLearning(Agent):
         if self.current_state is None:
             raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
 
-        should_explore = self.should_explore(self)
-
-        if should_explore:
+        if self.should_explore(self):
             a = np.random.randint(0, self.action_space.n)
         else:
             a = self.Q[self.current_state, :].argmax()
 
         self.last_action = a
 
-        return a, should_explore
+        return a
 
     def reset(self, state: int, reset_knowledge=True) -> int:
         super(QLearning, self).reset(state, reset_knowledge)
