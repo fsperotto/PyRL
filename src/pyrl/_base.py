@@ -132,7 +132,7 @@ class Env():
         
     def reset(self):
         self.t = 0
-        self.s = [0 for _ in range(len(states))] 
+        self.s = [0 for _ in range(len(self.states))] 
         self.r = 0.0
         self.done = False
 
