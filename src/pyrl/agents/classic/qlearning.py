@@ -10,7 +10,6 @@ class QLearning(Agent):
     """The QLearning class"""
 
     def __init__(self, observation_space: Space, action_space: Space, initial_observation=None, discount=0.9, learning_rate=0.1, should_explore: Callable=None, initial_Q: np.ndarray=None, initial_Q_value: float=None):
-
         self.initial_Q = None
         self.initial_Q_value = None
 
@@ -24,12 +23,15 @@ class QLearning(Agent):
         self.discount = discount
         self.learning_rate = learning_rate
         self.should_explore = should_explore if should_explore is not None else self.builtin_should_explore
+        self.saved_should_explore = self.should_explore
 
         if initial_Q is not None:
             self.Q_check(initial_Q)
             self.initial_Q = initial_Q
         elif initial_Q_value is not None:
             self.initial_Q_value = initial_Q_value
+
+        self.reset(initial_observation, reset_knowledge=True)
 
     def act(self) -> list:
         if self.current_state is None:
@@ -53,11 +55,11 @@ class QLearning(Agent):
             if self.initial_Q is not None:
                 self.Q = self.initial_Q
             elif self.initial_Q_value is not None:
-                self.Q = np.full((self.observation_space.n, self.action_space.n), initial_Q_value)
+                self.Q = np.full((self.observation_space.n, self.action_space.n), self.initial_Q_value, dtype=float)
             else:
-                self.Q = np.full((self.observation_space.n, self.action_space.n), 0)
+                self.Q = np.full((self.observation_space.n, self.action_space.n), 0, dtype=float)
 
-    def observe(self, state: int, reward: float, learn=True) -> None:
+    def observe(self, state: int, reward: float) -> None:
         if self.current_state is None:
             raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
 
@@ -67,13 +69,10 @@ class QLearning(Agent):
         self.current_reward = reward
         self.time = self.time + 1
 
-        print(f"Reward at step {self.time} is {self.current_reward}")
-
-        if learn:
-            self.learn()
-
     def learn(self) -> None:
         self.Q[self.last_state, self.last_action] = (1 - self.learning_rate) * self.Q[self.last_state, self.last_action] + self.learning_rate * (self.current_reward + self.discount * self.Q[self.current_state, :].max())
+
+        return self.Q[self.last_state, self.last_action]
 
     def builtin_should_explore(self, agent: Agent) -> bool:
         pn = np.random.random()
