@@ -165,8 +165,8 @@ class Sim():
         self.simulation_finished_callback = simulation_finished_callback
         self.debug = debug
 
-        if debug:
-            self.debugger = Debugger(num_simulations * num_episodes * episode_horizon)
+        if debug: # TODO: to fix to consider multiple agents, avoid (self.agents[0])
+            self.debugger = Debugger(self.agents[0], num_simulations * num_episodes * episode_horizon)
 
     def reset(self):
         pass
@@ -220,6 +220,7 @@ class Sim():
 
                                     continue_loop = False
 
+                            previous_observation = observation
                             action = agent.act()  # agent policy that uses the observation and info
                             observation, reward, terminated, truncated, info = env.step(action)
                             agent.observe(observation, reward)
@@ -228,11 +229,11 @@ class Sim():
                             if self.debug:
                                 connection.send({
                                     "progress" : 1 if (not terminated and not truncated) else episode_horizon - t,
-                                    "step" : (t, observation, action, reward),
+                                    "step" : (t, previous_observation, action, observation, reward),
                                     "learning": {
-                                        "x" : observation,
+                                        "x" : previous_observation,
                                         "y" : action,
-                                        "value": update
+                                        "value": str(update)
                                     }
                                 })
 
