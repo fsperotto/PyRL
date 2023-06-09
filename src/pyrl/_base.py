@@ -104,7 +104,7 @@ class Agent():
         #self.a = [None for _ in range(self.num_action_vars)]
         self.a = self.action_space.sample()
 
-    def act(self) -> list :
+    def act(self):
         """
         Choose an action to execute, and return it.
 
@@ -121,10 +121,12 @@ class Agent():
         #return the chosen action
         return self.a
 
-    def observe(self, s, r):
+    def observe(self, s, r, terminated, truncated):
         """Memorize the observed state and received reward."""
-        self.s = s  if isinstance(s, Iterable)  else  [s]
+        self.s = s  #if isinstance(s, Iterable)  else  [s]
         self.r = r
+        self.terminated = terminated
+        self.truncated = truncated
 
     def learn(self):
         pass
@@ -139,24 +141,63 @@ class Env(gym.Env):
     It represents the system to be controlled by an agent.
     """
 
-    def __init__(self, states=[2], actions=[2]):
+    metadata = {}
+
+    def __init__(self, states=[2], actions=[2], render_mode=None):
+        
         self.t = 0
+        
         self.states  = states  if isinstance(states, Iterable)  else  [states]
         self.actions = actions if isinstance(actions, Iterable) else  [actions]
         self.observation_space = MultiDiscrete(shape=self.states)
         self.action_space = MultiDiscrete(shape=self.actions)
+        
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+
+        """
+        If human-rendering is used, `self.window` will be a reference to the window that we draw to. 
+        `self.clock` will be a clock that is used to ensure that the environment is rendered at the correct framerate in human-mode. 
+        They will remain `None` until human-mode is used for the first time.
+        """
+        self.window = None
+        self.clock = None    
+        
         self.reset()
 
-    def reset(self):
-        super.reset()
+    def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[ObsType, dict[str, Any]]:
+        
+        # We need the following line to seed self.np_random
+        super().reset(seed=seed)
+        
         self.t = 0
+
         self.s = [0 for _ in range(len(self.states))]
         self.r = 0.0
-        self.done = False
+        self.terminated = False
+        self.truncated = False
+        
+        observation = self._get_obs()
+        info = self._get_info()
+        
+        return observation, info
+        
 
-    def step(self, a):
+    def step(self, action):
         self.t += 1
-        return self.s, self.r, self.done
+        return self.s, self.r, self.terminated, self.truncated
+        
+    def _get_obs(self):
+        """
+        translates the environment’s state into an observation
+        """
+        pass
+
+    def _get_info(self):
+        """
+        method for the auxiliary information that is returned by step and reset
+        """
+        return {"time-step": self.t}        
 
 ###################################################################
 
