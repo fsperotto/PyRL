@@ -26,7 +26,7 @@ import numpy as np
 from collections.abc import Iterable
 
 import gymnasium as gym
-from gymnasium.spaces import MultiDiscrete
+from gymnasium.spaces import Space, Discrete, MultiDiscrete
 from gymnasium.spaces.utils import flatdim, flatten_space
 
 
@@ -143,15 +143,24 @@ class Env(gym.Env):
 
     metadata = {}
 
-    def __init__(self, states=[2], actions=[2], render_mode=None):
+    def __init__(self, observation_space=[2], action_space=[2], render_mode=None):
         
         self.t = 0
         
-        self.states  = states  if isinstance(states, Iterable)  else  [states]
-        self.actions = actions if isinstance(actions, Iterable) else  [actions]
-        self.observation_space = MultiDiscrete(shape=self.states)
-        self.action_space = MultiDiscrete(shape=self.actions)
-        
+        if isinstance(observation_space, int):
+            self.observation_space = Discrete(observation_space)
+        elif isinstance(observation_space, Iterable):
+            self.observation_space = MultiDiscrete(shape=observation_space)
+        else:
+            self.observation_space = observation_space
+
+        if isinstance(action_space, int):
+            self.action_space = Discrete(action_space)
+        elif isinstance(action_space, Iterable):
+            self.action_space = MultiDiscrete(shape=action_space)
+        else:
+            self.action_space = action_space
+
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
 
@@ -165,7 +174,7 @@ class Env(gym.Env):
         
         self.reset()
 
-    def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[ObsType, dict[str, Any]]:
+    def reset(self, *, seed:int=None, options:dict=None) -> tuple:
         
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
@@ -195,7 +204,7 @@ class Env(gym.Env):
 
     def _get_info(self):
         """
-        method for the auxiliary information that is returned by step and reset
+        method for the auxiliary information (a dict) that is returned by step and reset
         """
         return {"time-step": self.t}        
 
@@ -247,7 +256,7 @@ class Sim():
 
                             action = agent.act()  # agent policy that uses the observation and info
                             observation, reward, terminated, truncated, info = env.step(action)
-                            agent.observe(observation, reward)
+                            agent.observe(observation, reward, terminated, truncated)
                             agent.learn()
 
                             if self.round_finished_callback is not None:
