@@ -9,7 +9,7 @@ from pyrl import Agent
 class QLearning(Agent):
     """The QLearning class"""
 
-    def __init__(self, observation_space: Space, action_space: Space, initial_observation=None, discount=0.9, learning_rate=0.1, should_explore: Callable=None, initial_Q: np.ndarray=None, initial_Q_value: float=None):
+    def __init__(self, observation_space: Space, action_space: Space, initial_observation=None, discount=0.9, learning_rate=0.1, should_explore: Callable=None, initial_Q: np.ndarray=None, initial_Q_value: float=None, budget=100, survival_threshold=10):
         self.initial_Q = None
         self.initial_Q_value = None
 
@@ -24,6 +24,8 @@ class QLearning(Agent):
         self.learning_rate = learning_rate
         self.should_explore = should_explore if should_explore is not None else self.builtin_should_explore
         self.saved_should_explore = self.should_explore
+        self.budget = budget
+        self.survival_threshold = survival_threshold
 
         if initial_Q is not None:
             self.Q_check(initial_Q)
@@ -37,7 +39,7 @@ class QLearning(Agent):
         if self.current_state is None:
             raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
 
-        if self.should_explore(self):
+        if self.should_explore(self) and self.budget > self.survival_threshold:
             a = np.random.randint(0, self.action_space.n)
         else:
             a = self.Q[self.current_state, :].argmax()
