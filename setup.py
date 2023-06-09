@@ -7,15 +7,6 @@ with open("README.md", "r") as fh:
 #    requirements = fh.read()
 #    requirements = requirements.split()
 
-requirements = [
-    'numpy',
-    'scipy',
-    'matplotlib',
-    'pandas',
-    'SMPyBandits',
-    'tqdm'
-]
-
 setup(
     name="pyrl",
     version="0.0.1",
@@ -28,9 +19,9 @@ setup(
     #license = 'MIT',
     package_dir = {"": "src"},
     #packages=find_packages(),
-	packages=['pyrl', 'pyrl.mab', 'pyrl.mdp'],
-    #packages=find_packages(exclude=['data', 'notebooks']), 
-    #packages=find_namespace_packages(include=['smab'],exclude=['extra', 'old', 'notebooks']),
+	#packages=['pyrl', 'pyrl.mab', 'pyrl.mdp'],
+    packages=find_packages(exclude=['extra', 'old', 'data', 'temp', 'drafts', 'test', 'notebooks']), 
+    packages=find_namespace_packages(exclude=['extra', 'old', 'data', 'temp', 'drafts', 'test', 'notebooks']),
     #include_package_data = True,
     #package_data={'corpus': ['corpus']},
     classifiers=[

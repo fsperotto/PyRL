@@ -25,6 +25,12 @@ import numpy as np
 #from abc import ABC, abstractmethod  #ABC is abstract base class
 from collections.abc import Iterable
 
+import gymnasium as gym
+from gymnasium.spaces import MultiDiscrete
+from gymnasium.spaces.utils import flatdim, flatten_space
+from gymnasium import Env
+
+
 ###################################################################
 
 class Agent():
@@ -56,19 +62,28 @@ class Agent():
     """
     
     def __init__(self, observation_space, action_space, initial_observation=None):
-        """Agent Constructor. The dimensions concerning observable states and actions must be informed."""
+        """
+        Agent Constructor. 
+        The dimensions concerning observable states and actions must be informed.
+        """
+
         #observations (what the agent perceives from the environment state)
-        #self.states  = states  if isinstance(states, Iterable)  else  [states]
-        #self.num_state_vars = len(states)
-        #self.num_flat_states = np.prod(self.states)
+        self.observation_space = observation_space
+        #self.observation_space  = observation_space  if isinstance(observation_space, Iterable)  else  [observation_space]
+        #self.num_state_vars = len(observation_space)
+        #self.num_flat_states = np.prod(self.observation_space)
+        self.num_flat_states = flatdim(flatten_space(observation_space))
+        
         #actions
-        #self.actions = actions if isinstance(actions, Iterable) else  [actions]
-        #self.num_action_vars = len(actions)
-        #self.num_flat_actions = np.prod(self.actions)
-        #reset
-        self.observation_space  = observation_space
         self.action_space = action_space
+        #self.action_space = action_space if isinstance(action_space, Iterable) else  [action_space]
+        #self.num_action_vars = len(action_space)
+        #self.num_flat_actions = np.prod(self.action_space)
+        self.num_flat_actions = flatdim(flatten_space(action_space))
+        
+        #reset
         self.reset(initial_observation)
+        
         
     def reset(self, initial_observation, reset_knowledge=True):
         """
@@ -117,7 +132,7 @@ class Agent():
         
 ###################################################################
         
-class Env():
+class Environment(Env):
     """
     Environment Class
     
@@ -128,9 +143,12 @@ class Env():
         self.t = 0
         self.states  = states  if isinstance(states, Iterable)  else  [states]
         self.actions = actions if isinstance(actions, Iterable) else  [actions]
+        self.observation_space = MultiDiscrete(shape=self.states)
+        self.action_space = MultiDiscrete(shape=self.actions)
         self.reset()
         
     def reset(self):
+        super.reset()
         self.t = 0
         self.s = [0 for _ in range(len(states))] 
         self.r = 0.0
