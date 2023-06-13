@@ -61,7 +61,7 @@ class QLearning(Agent):
             else:
                 self.Q = np.full((self.observation_space.n, self.action_space.n), 0, dtype=float)
 
-    def observe(self, state: int, reward: float) -> None:
+    def observe(self, state: int, reward: float, terminated: bool=False, truncated: bool=False) -> None:
         if self.current_state is None:
             raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
 
@@ -70,6 +70,7 @@ class QLearning(Agent):
         self.current_state = state
         self.current_reward = reward
         self.time = self.time + 1
+        self.budget = self.budget + reward
 
     def learn(self) -> None:
         self.Q[self.last_state, self.last_action] = (1 - self.learning_rate) * self.Q[self.last_state, self.last_action] + self.learning_rate * (self.current_reward + self.discount * self.Q[self.current_state, :].max())
