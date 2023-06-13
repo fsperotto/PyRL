@@ -4,6 +4,8 @@ import numpy as np
 import gymnasium as gym
 import pygame as pg
 
+from pyrl import Env
+
 class SurvivalEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
@@ -21,6 +23,8 @@ class SurvivalEnv(gym.Env):
             2: np.array([-1, 0]),
             3: np.array([0, -1]),
         }
+
+        self.t = 0
 
         self._target_locations = np.array([
             [self.size - 2, self.size - 2], # highest reward
@@ -44,6 +48,8 @@ class SurvivalEnv(gym.Env):
     def reset(self, seed=None, options=None) -> Tuple[int, dict]:
         super().reset(seed=seed)
 
+        self.t = 0
+
         self._agent_location = np.array([0, 0])
 
         observation = self._get_obs()
@@ -55,6 +61,7 @@ class SurvivalEnv(gym.Env):
         return observation, info
 
     def step(self, action):
+        self.t = self.t + 1
         direction = self._action_to_direction[action]
         self._agent_location = np.clip(
             self._agent_location + direction, 0, self.size - 1
