@@ -60,7 +60,7 @@ class Agent():
                 last received reward.
     """
 
-    def __init__(self, observation_space, action_space, initial_observation=None):
+    def __init__(self, observation_space, action_space, initial_observation=None, budget=None):
         """
         Agent Constructor. 
         The dimensions concerning observable states and actions must be informed.
@@ -82,6 +82,8 @@ class Agent():
         
         #reset
         self.reset(initial_observation)
+        
+        self.budget = budget
 
 
     def reset(self, initial_observation, reset_knowledge=True):
@@ -127,6 +129,11 @@ class Agent():
         self.r = r
         self.terminated = terminated
         self.truncated = truncated
+
+        self.t = self.t + 1
+
+        if self.budget is not None:
+            self.budget = self.budget + r
 
     def learn(self):
         pass
@@ -268,6 +275,10 @@ class Sim():
                             if terminated or truncated:
                                 break
                                 #observation, info = env.reset()
+                            
+                            if agent.budget is not None:
+                                if agent.budget <= 0:
+                                    break
 
                         if self.episode_finished_callback is not None:
                             try:
