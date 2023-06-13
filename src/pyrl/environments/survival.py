@@ -7,11 +7,11 @@ import pygame as pg
 class SurvivalEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode: str=None, size: tuple=(5, 10)) -> None:
-        self.size = size[0] * size[1]
+    def __init__(self, render_mode: str=None, size: int=20) -> None:
+        self.size = size
         self.window_size = 512
 
-        self.observation_space = gym.spaces.Discrete(self.size)
+        self.observation_space = gym.spaces.Discrete(self.size * self.size)
 
         self.action_space = gym.spaces.Discrete(4)
 
@@ -22,6 +22,13 @@ class SurvivalEnv(gym.Env):
             3: np.array([0, -1]),
         }
 
+        self._target_locations = np.array([
+            [self.size - 2, self.size - 2], # highest reward
+            [2*(self.size - 1) // 3, 2 * (self.size - 1) // 3],
+            [(self.size - 1) // 4, (self.size - 1) // 2],
+            [(self.size - 1) // 2, (self.size - 1) // 4],
+        ])
+
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
 
@@ -29,7 +36,7 @@ class SurvivalEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self) -> int:
-        return self._agent_location
+        return self._agent_location[0] * self.size + self._agent_location[1]
 
     def _get_info(self) -> dict:
         return dict()
@@ -37,13 +44,7 @@ class SurvivalEnv(gym.Env):
     def reset(self, seed=None, options=None) -> Tuple[int, dict]:
         super().reset(seed=seed)
 
-        self._agent_location = self.np_random.integers(0, self.size, size=2, dtype=int)
-
-        self._target_location = self._agent_location
-        while np.array_equal(self._target_location, self._agent_location):
-            self._target_location = self.np_random.integers(
-                0, self.size, size=2, dtype=int
-            )
+        self._agent_location = np.array([0, 0])
 
         observation = self._get_obs()
         info = self._get_info()
@@ -52,22 +53,28 @@ class SurvivalEnv(gym.Env):
             self._render_frame()
 
         return observation, info
-    
+
     def step(self, action):
         direction = self._action_to_direction[action]
         self._agent_location = np.clip(
             self._agent_location + direction, 0, self.size - 1
         )
-        terminated = np.array_equal(self._agent_location, self._target_location)
-        reward = 1 if terminated else 0
         observation = self._get_obs()
         info = self._get_info()
 
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, reward, terminated, False, info
-    
+        reward = -1
+        for index, target_location in enumerate(self._target_locations):
+            if np.array_equal(self._agent_location, target_location):
+                if index == 0:
+                    reward = 100
+                else:
+                    reward = 10
+
+        return observation, reward, False, False, info
+
     def render(self):
         if self.render_mode == "rgb_array":
             return self._render_frame()
@@ -86,18 +93,18 @@ class SurvivalEnv(gym.Env):
         canvas.fill((255, 255, 255))
         pix_square_size = (
             self.window_size / self.size
-        )  # The size of a single grid square in pixels
-
-        # First we draw the target
-        pg.draw.rect(
-            canvas,
-            (255, 0, 0),
-            pg.Rect(
-                pix_square_size * self._target_location,
-                (pix_square_size, pix_square_size),
-            ),
         )
-        # Now we draw the agent
+
+        for index, target_location in enumerate(self._target_locations):
+            pg.draw.rect(
+                canvas,
+                (255, 0 if index == 0 else 165, 0),
+                pg.Rect(
+                    pix_square_size * target_location,
+                    (pix_square_size, pix_square_size),
+                ),
+            )
+
         pg.draw.circle(
             canvas,
             (0, 0, 255),
@@ -105,7 +112,6 @@ class SurvivalEnv(gym.Env):
             pix_square_size / 3,
         )
 
-        # Finally, add some gridlines
         for x in range(self.size + 1):
             pg.draw.line(
                 canvas,
@@ -123,20 +129,17 @@ class SurvivalEnv(gym.Env):
             )
 
         if self.render_mode == "human":
-            # The following line copies our drawings from `canvas` to the visible window
             self.window.blit(canvas, canvas.get_rect())
             pg.event.pump()
             pg.display.update()
 
-            # We need to ensure that human-rendering occurs at the predefined framerate.
-            # The following line will automatically add a delay to keep the framerate stable.
             self.clock.tick(self.metadata["render_fps"])
-        else:  # rgb_array
+        else:
             return np.transpose(
                 np.array(pg.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
         
-    def close(self):
+    def close(self) -> None:
         if self.window is not None:
             pg.display.quit()
             pg.quit()

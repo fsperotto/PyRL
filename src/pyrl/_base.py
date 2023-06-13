@@ -276,7 +276,7 @@ class Sim():
                                 print(str(e))
 
                     if self.simulation_finished_callback is not None:
-                       try:
-                           self.simulation_finished_callback(env, agent)
-                       except Exception as e:
+                        try:
+                            self.simulation_finished_callback(env, agent)
+                        except Exception as e:
                             print(str(e))

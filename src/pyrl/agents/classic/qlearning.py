@@ -59,7 +59,7 @@ class QLearning(Agent):
             else:
                 self.Q = np.full((self.observation_space.n, self.action_space.n), 0, dtype=float)
 
-    def observe(self, state: int, reward: float) -> None:
+    def observe(self, state: int, reward: float, terminated: bool, truncated: bool) -> None:
         if self.current_state is None:
             raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
 
