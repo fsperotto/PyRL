@@ -27,6 +27,8 @@ Python scripts and Jupyter notebooks concerning: Pascal's Triangle, Catalan's Tr
 - [x] Advantage Actor Critic
 - [ ] Trust Region Policy Optimization (TRPO)
 
-### Survival Agents
+### Survival RL Agents
 - [ ] Survival Q-learning with budget threshold
 - [ ] Survival Deep Q-Network
+
+### Safe RL Agents
