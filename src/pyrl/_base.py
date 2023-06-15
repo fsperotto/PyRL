@@ -5,13 +5,13 @@
 Base Classes.
 
 This module implements abstract classes, directly available from PyRL module:
-   
-   - Agent : the agent, implementing a controller 
-   
+
+   - Agent : the agent, implementing a controller
+
    - Env : environment, implementing the controlled system (the problem)
-   
+
    - Sim : simulator
-   
+
 """
 
 __version__ = "0.0.1"
@@ -25,20 +25,25 @@ import numpy as np
 #from abc import ABC, abstractmethod  #ABC is abstract base class
 from collections.abc import Iterable
 
+import gymnasium as gym
+from gymnasium.spaces import Space, Discrete, MultiDiscrete
+from gymnasium.spaces.utils import flatdim, flatten_space
+
+
 ###################################################################
 
 class Agent():
     """
     Agent Class
-    
+
     It represents the controller, interacting with the system, also called environment.
-    
+
         Parameters:
             states : list (or iterable)
-                the list of variables that constitute the space of states. 
+                the list of variables that constitute the space of states.
                 e.g.: [4, 10] means two categorical variables assuming 4 and 10 different values, respectively.
             actions : list (or iterable)
-                the list of variables that constitute the space of actions. 
+                the list of variables that constitute the space of actions.
             num_state_vars : int
                 number of variables that represent the state space.
             num_action_vars : int
@@ -54,27 +59,38 @@ class Agent():
             r : float
                 last received reward.
     """
-    
-    def __init__(self, observation_space, action_space, initial_observation=None):
-        """Agent Constructor. The dimensions concerning observable states and actions must be informed."""
+
+    def __init__(self, observation_space, action_space, initial_observation=None, budget=None):
+        """
+        Agent Constructor. 
+        The dimensions concerning observable states and actions must be informed.
+        """
+
         #observations (what the agent perceives from the environment state)
-        #self.states  = states  if isinstance(states, Iterable)  else  [states]
-        #self.num_state_vars = len(states)
-        #self.num_flat_states = np.prod(self.states)
+        self.observation_space = observation_space
+        #self.observation_space  = observation_space  if isinstance(observation_space, Iterable)  else  [observation_space]
+        #self.num_state_vars = len(observation_space)
+        #self.num_flat_states = np.prod(self.observation_space)
+        self.num_flat_states = flatdim(flatten_space(observation_space))
+        
         #actions
-        #self.actions = actions if isinstance(actions, Iterable) else  [actions]
-        #self.num_action_vars = len(actions)
-        #self.num_flat_actions = np.prod(self.actions)
-        #reset
-        self.observation_space  = observation_space
         self.action_space = action_space
+        #self.action_space = action_space if isinstance(action_space, Iterable) else  [action_space]
+        #self.num_action_vars = len(action_space)
+        #self.num_flat_actions = np.prod(self.action_space)
+        self.num_flat_actions = flatdim(flatten_space(action_space))
+        
+        #reset
         self.reset(initial_observation)
         self.terminal = False
         
+        self.budget = budget
+
+
     def reset(self, initial_observation, reset_knowledge=True):
         """
         Reset $t, r, s, a$, and can also reset the learned knowledge.
-        
+
             Parameters:
                 s (list): the initial state of the environment, observed by the agent
                 reset_knowledge (bool) = True : if the agent should be completely reseted
@@ -82,36 +98,42 @@ class Agent():
             Returns:
                 action : list representing the joint action chosen by the controller
         """
-        #time, or number of elapsed rounds 
-        self.t = 0   
+        #time, or number of elapsed rounds
+        self.t = 0
         #memory of the current state and last received reward
         self.s = initial_observation  if isinstance(initial_observation, Iterable)  else  [initial_observation]
         self.r = 0.0
         #next chosen action
-        #self.a = [None for _ in range(self.num_action_vars)] 
+        #self.a = [None for _ in range(self.num_action_vars)]
         self.a = self.action_space.sample()
 
-    def act(self) -> list :
+    def act(self):
         """
         Choose an action to execute, and return it.
-        
+
             Parameters:
                 a (int): A decimal integer
                 b (int): Another decimal integer
 
             Returns:
                 action : list representing the joint action chosen by the controller
-                
+
         """
         #choose an action
         # self.a = [...]
         #return the chosen action
         return self.a
+<<<<<<< HEAD
         
     def observe(self, s, r, terminal=False):
+=======
+
+    def observe(self, s, r, terminated, truncated):
+>>>>>>> 3b82cecd52a8c2d61ec166f9af50370947e7a583
         """Memorize the observed state and received reward."""
-        self.s = s  if isinstance(s, Iterable)  else  [s]
+        self.s = s  #if isinstance(s, Iterable)  else  [s]
         self.r = r
+<<<<<<< HEAD
         self.terminal = terminal
         
     def learn(self):
@@ -120,40 +142,105 @@ class Agent():
     def close(self):
         pass
         
+=======
+        self.terminated = terminated
+        self.truncated = truncated
+
+        self.t = self.t + 1
+
+        if self.budget is not None:
+            self.budget = self.budget + r
+
+    def learn(self):
+        pass
+
+>>>>>>> 3b82cecd52a8c2d61ec166f9af50370947e7a583
 ###################################################################
         
-class Env():
+class Env(gym.Env):
+
     """
     Environment Class
-    
+
     It represents the system to be controlled by an agent.
     """
-    
-    def __init__(self, states=[2], actions=[2]):
-        self.t = 0
-        self.states  = states  if isinstance(states, Iterable)  else  [states]
-        self.actions = actions if isinstance(actions, Iterable) else  [actions]
-        self.reset()
-        
-    def reset(self):
-        self.t = 0
-        self.s = [0 for _ in range(len(self.states))] 
-        self.r = 0.0
-        self.done = False
 
-    def step(self, a):
-        self.t += 1
-        return self.s, self.r, self.done
-                
-###################################################################
-  
+    metadata = {}
+
+    def __init__(self, observation_space=[2], action_space=[2], render_mode=None):
         
+        self.t = 0
+        
+        if isinstance(observation_space, int):
+            self.observation_space = Discrete(observation_space)
+        elif isinstance(observation_space, Iterable):
+            self.observation_space = MultiDiscrete(shape=observation_space)
+        else:
+            self.observation_space = observation_space
+
+        if isinstance(action_space, int):
+            self.action_space = Discrete(action_space)
+        elif isinstance(action_space, Iterable):
+            self.action_space = MultiDiscrete(shape=action_space)
+        else:
+            self.action_space = action_space
+
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+
+        """
+        If human-rendering is used, `self.window` will be a reference to the window that we draw to. 
+        `self.clock` will be a clock that is used to ensure that the environment is rendered at the correct framerate in human-mode. 
+        They will remain `None` until human-mode is used for the first time.
+        """
+        self.window = None
+        self.clock = None    
+        
+        self.reset()
+
+    def reset(self, *, seed:int=None, options:dict=None) -> tuple:
+        
+        # We need the following line to seed self.np_random
+        super().reset(seed=seed)
+        
+        self.t = 0
+
+        self.s = [0 for _ in range(len(self.states))]
+        self.r = 0.0
+        self.terminated = False
+        self.truncated = False
+        
+        observation = self._get_obs()
+        info = self._get_info()
+        
+        return observation, info
+        
+
+    def step(self, action):
+        self.t += 1
+        return self.s, self.r, self.terminated, self.truncated
+        
+    def _get_obs(self):
+        """
+        translates the environment’s state into an observation
+        """
+        pass
+
+    def _get_info(self):
+        """
+        method for the auxiliary information (a dict) that is returned by step and reset
+        """
+        return {"time-step": self.t}        
+
+###################################################################
+
+
 class Sim():
     """
     Simulator Class
-    
+
     """
-    
+
     def __init__(self, agents, envs, episode_horizon=100, num_episodes=1, num_simulations=1,
                  episode_finished_callback=None, simulation_finished_callback=None, round_finished_callback=None):
         self.agents = agents  if isinstance(agents, Iterable)  else  [agents]
@@ -165,35 +252,35 @@ class Sim():
         self.round_finished_callback = round_finished_callback
         self.episode_finished_callback = episode_finished_callback
         self.simulation_finished_callback = simulation_finished_callback
-        
+
     def reset(self):
         pass
 
 
     def run(self, episode_horizon=None, num_episodes=None, num_simulations=None):
-        
-        episode_horizon = episode_horizon  if  episode_horizon is not None else self.episode_horizon 
+
+        episode_horizon = episode_horizon  if  episode_horizon is not None else self.episode_horizon
         num_episodes = num_episodes  if  num_episodes is not None  else  self.num_episodes
         num_simulations = num_simulations  if  num_simulations is not None   else  self.num_simulations
-        
+
         for env in self.envs:
             for agent in self.agents:
-                                
+
                 for i in range(num_simulations):
-                
+
                     observation, info = env.reset()
                     agent.reset(observation)
-                    
+
                     for j in range(num_episodes):
-                        
+
                         observation, info = env.reset()
                         agent.reset(observation, reset_knowledge=False)
-                        
+
                         for t in range(1, episode_horizon+1):
-                            
+
                             action = agent.act()  # agent policy that uses the observation and info
                             observation, reward, terminated, truncated, info = env.step(action)
-                            agent.observe(observation, reward)
+                            agent.observe(observation, reward, terminated, truncated)
                             agent.learn()
 
                             if self.round_finished_callback is not None:
@@ -204,17 +291,20 @@ class Sim():
 
                             if terminated or truncated:
                                 break
-                                #observation, info = env.reset()        
+                                #observation, info = env.reset()
+                            
+                            if agent.budget is not None:
+                                if agent.budget <= 0:
+                                    break
 
                         if self.episode_finished_callback is not None:
                             try:
                                 self.episode_finished_callback(env, agent)
                             except Exception as e:
                                 print(str(e))
-                            
+
                     if self.simulation_finished_callback is not None:
-                       try:
-                           self.simulation_finished_callback(env, agent)
-                       except Exception as e:
+                        try:
+                            self.simulation_finished_callback(env, agent)
+                        except Exception as e:
                             print(str(e))
-                           

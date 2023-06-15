@@ -13,8 +13,11 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   pyrl.agents
+   pyrl.environments
    pyrl.mab
    pyrl.mdp
+   pyrl.replay_buffer
 
 Submodules
 ----------

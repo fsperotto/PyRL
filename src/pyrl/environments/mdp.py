@@ -1,70 +1,45 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""
-Naive RL
-   
-"""
-
-__version__ = "0.0.1"
-__author__ = "Filipo S. Perotto, Aymane Ouhabi, Melvine Nargeot"
-__license__ = "MIT"
-__status__ = "Development"
-
-################
-
 import math
 from math import sin, cos, atan, sqrt
 import numpy as np
 
 from random import sample, randint, randrange, random
 
-from .._base import Agent
 
 ############################################################################
 
-class RandomAgent(Agent):
-    """
-    Random Agent Class
+class RandomAgent():
     
-    """
+    def __init__(self, problem):
+        self.problem = problem
+        
+    def choose(self):
+        return [randint(-1,+1) for n in self.problem.art_num_states]
+
+    def update(self):
+        pass
     
     def act(self):
-        self.a = self.action_space.sample()
-        return self.a    
-        
-        
-
+        self.choose()
+        self.problem.update(self.action)
+        self.update()
     
 ############################################################################
 
-class QLearningAgent(Agent):
+class QLearningAgent:
 
-    def __init__(self, observation_space, action_space, initial_observation=None, default_action=None, alpha=0.5, gamma=0.9, epsilon=0.1):
-        
-        super.__init__(observation_space, action_space, initial_observation=None)
+    def __init__(self, problem, alpha=0.5, gamma=0.9, epsilon=0.1):
+        self.problem = problem
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
-        self.default_action = default_action
+        self.reset()
 
-    def reset(self, initial_observation):
-        
-        super.reset(initial_observation)
-        #time, or number of elapsed rounds 
-        #self.t = 0    #super
-        #memory of the current state and last received reward
-        #self.s = initial_observation  if isinstance(initial_observation, Iterable)  else  [initial_observation]   #super
-        #self.r = 0.0 #super
-        #next chosen action
-        #self.a = self.action_space.sample()        #super
-        
+    def reset(self):
         self.modified = False
-        if self.default_action is not None:
-            self.a = self.default_action
-        self.q_values = np.zeros(shape=(self.problem.num_flat_states, self.problem.num_flat_actions))
-        self.policy = np.zeros(shape=(self.problem.num_flat_states))
-        
+        self.state = self.problem.cur_flat_state()
+        self.action = self.problem.cur_flat_action()
+        self.reward = self.problem.last_reward
+        self.q_values = np.zeros(shape=(self.problem.num_flat_states, self.problem.num_flat_actions) )
         
     #Q-Learning updating
     def update(self):
