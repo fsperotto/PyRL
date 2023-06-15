@@ -10,7 +10,7 @@ It is specially designed to include Safe and Survival Reinforcement Learning met
 Python scripts and Jupyter notebooks concerning: Pascal's Triangle, Catalan's Triangle, Gambler's Ruin, Decisional Gambling Processes, Multi-Armed Bandits, Survival Bandits, Multi-Armed Gambler, Survival Decision Processes, and Reinforcement Learning
 
 
-## Algorithms to be implemented
+## Supported Algorithms
 
 ### Classic Agents
 
