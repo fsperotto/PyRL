@@ -33,7 +33,7 @@ dependencies = [
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["pyrl", "pyrl.mab", "pyrl.mdp"]
+packages = ["pyrl", "pyrl.mab", "pyrl.mdp", "pyrl.replay_buffer"]
 
 #[tool.setuptools.packages.find]
 #where = ["src"]
