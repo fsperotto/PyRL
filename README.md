@@ -32,3 +32,9 @@ Python scripts and Jupyter notebooks concerning: Pascal's Triangle, Catalan's Tr
 - [ ] Survival Deep Q-Network
 
 ### Safe RL Agents
+
+### Multi-Armed Bandits
+- [ ] Pascal's Triangle
+- [ ] Catalan's Triangle
+- [ ] Gambler's Ruin
+- [ ] Survival Bandits
