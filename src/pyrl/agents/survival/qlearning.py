@@ -10,8 +10,8 @@ class QLearning(Agent):
     """The QLearning class"""
 
     def __init__(self, observation_space: Space, action_space: Space, initial_observation=None, discount=0.9, learning_rate=0.1, should_explore: Callable=None, initial_Q: np.ndarray=None, initial_Q_value: float=None, budget=100, survival_threshold=10):
-        self.initial_Q = None
-        self.initial_Q_value = None
+        self.initial_Q = initial_Q
+        self.initial_Q_value = initial_Q_value
 
         super(QLearning, self).__init__(observation_space, action_space, initial_observation)
 
