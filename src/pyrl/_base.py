@@ -69,6 +69,7 @@ class Agent():
         self.observation_space  = observation_space
         self.action_space = action_space
         self.reset(initial_observation)
+        self.terminal = False
         
     def reset(self, initial_observation, reset_knowledge=True):
         """
@@ -107,12 +108,16 @@ class Agent():
         #return the chosen action
         return self.a
         
-    def observe(self, s, r):
+    def observe(self, s, r, terminal=False):
         """Memorize the observed state and received reward."""
         self.s = s  if isinstance(s, Iterable)  else  [s]
         self.r = r
+        self.terminal = terminal
         
     def learn(self):
+        pass
+    
+    def close(self):
         pass
         
 ###################################################################

@@ -1,6 +1,6 @@
 import pyrl
 from pyrl import Agent
-# import pyrl.replay_buffer
+from pyrl.replay_buffer.replay_buffer import ReplayMemory
 from collections import namedtuple, deque
 
 import math
@@ -13,20 +13,20 @@ from collections.abc import Iterable
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
-class ReplayMemory(object):
+# class ReplayMemory(object):
 
-    def __init__(self, capacity):
-        self.memory = deque([], maxlen=capacity)
+#     def __init__(self, capacity):
+#         self.memory = deque([], maxlen=capacity)
 
-    def push(self, *args):
-        """Save a transition"""
-        self.memory.append(Transition(*args))
+#     def push(self, *args):
+#         """Save a transition"""
+#         self.memory.append(Transition(*args))
 
-    def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
+#     def sample(self, batch_size):
+#         return random.sample(self.memory, batch_size)
 
-    def __len__(self):
-        return len(self.memory)
+#     def __len__(self):
+#         return len(self.memory)
     
     
 class DQN(nn.Module):
@@ -51,7 +51,7 @@ class DQNAgent(Agent):
     def __init__(self, observation_space, action_space, initial_observation=None,
                  eps_start=0.9, eps_end=0.05, eps_decay=1000,
                  replay_buffer=ReplayMemory(1000), batch_size=128, gamma=0.99,
-                 tau=0.005,
+                 tau=0.005, 
                  ):
         super().__init__(observation_space, action_space, initial_observation=None)
         self.eps_start = eps_start
