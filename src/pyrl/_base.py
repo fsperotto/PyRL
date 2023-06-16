@@ -123,6 +123,7 @@ class Agent():
         # self.a = [...]
         #return the chosen action
         return self.a
+<<<<<<< HEAD
         
     def observe(self, s, r, terminal=False):
         """Memorize the observed state and received reward."""
@@ -136,6 +137,24 @@ class Agent():
     def close(self):
         pass
         
+=======
+
+    def observe(self, s, r, terminated, truncated):
+        """Memorize the observed state and received reward."""
+        self.s = s  #if isinstance(s, Iterable)  else  [s]
+        self.r = r
+        self.terminated = terminated
+        self.truncated = truncated
+
+        self.t = self.t + 1
+
+        if self.budget is not None:
+            self.budget = self.budget + r
+
+    def learn(self):
+        pass
+
+>>>>>>> e119a6a7b37a88f50ceeae351ef82453890e0b57
 ###################################################################
         
 class Env(gym.Env):
