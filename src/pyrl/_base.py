@@ -123,17 +123,11 @@ class Agent():
         # self.a = [...]
         #return the chosen action
         return self.a
-<<<<<<< HEAD
         
     def observe(self, s, r, terminal=False):
-=======
-
-    def observe(self, s, r, terminated, truncated):
->>>>>>> 3b82cecd52a8c2d61ec166f9af50370947e7a583
         """Memorize the observed state and received reward."""
         self.s = s  #if isinstance(s, Iterable)  else  [s]
         self.r = r
-<<<<<<< HEAD
         self.terminal = terminal
         
     def learn(self):
@@ -142,19 +136,6 @@ class Agent():
     def close(self):
         pass
         
-=======
-        self.terminated = terminated
-        self.truncated = truncated
-
-        self.t = self.t + 1
-
-        if self.budget is not None:
-            self.budget = self.budget + r
-
-    def learn(self):
-        pass
-
->>>>>>> 3b82cecd52a8c2d61ec166f9af50370947e7a583
 ###################################################################
         
 class Env(gym.Env):
