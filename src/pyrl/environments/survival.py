@@ -9,7 +9,7 @@ from pyrl import Env
 class SurvivalEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode: str=None, size: int=20) -> None:
+    def __init__(self, render_mode: str=None, size: int=20, terminate=False) -> None:
         self.size = size
         self.window_size = 512
 
@@ -36,6 +36,8 @@ class SurvivalEnv(gym.Env):
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
 
+        self.terminate = terminate
+        
         self.window = None
         self.clock = None
 
@@ -61,6 +63,7 @@ class SurvivalEnv(gym.Env):
         return observation, info
 
     def step(self, action):
+        done = False
         self.t = self.t + 1
         direction = self._action_to_direction[action]
         self._agent_location = np.clip(
@@ -80,7 +83,10 @@ class SurvivalEnv(gym.Env):
                 else:
                     reward = 10
 
-        return observation, reward, False, False, info
+        if self.terminate and np.array_equal(self._agent_location, self._target_locations[0]):
+            done = True
+         
+        return observation, reward, done, False, info
 
     def render(self):
         if self.render_mode == "rgb_array":

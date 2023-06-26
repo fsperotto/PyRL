@@ -5,5 +5,5 @@ Development Lead
 ~~~~~~~~~~~~~~~~
 
 - Filipo S. Perotto <filipo.perotto@onera.fr>
-- Aymane Ouhabi
+- Aymane Ouahbi
 - Melvine Nargeot

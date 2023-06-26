@@ -1,4 +1,3 @@
-import pyrl
 from pyrl import Agent
 from pyrl.replay_buffer.replay_buffer import ReplayMemory
 from collections import namedtuple, deque
@@ -27,30 +26,31 @@ class DQN(nn.Module):
         x = F.relu(self.layer2(x))
         return self.layer3(x)
 
-class DQNAgent(Agent):
+class SurvivalDQNAgent(Agent):
     """
-        Deep Q-Network Agent.
-
+        Deep Q-Network Agent in Survival RL Framework.
     """
     
     def __init__(self, observation_space, action_space, initial_observation=None,
-                 initial_budget=1000, eps_start=0.9, eps_end=0.05, eps_decay=1000,
-                 replay_buffer=ReplayMemory(1000), batch_size=128, gamma=0.99,
+                 initial_budget=100, threshold=30, eps_start=0.9, eps_end=0.05, eps_decay=1000,
+                 replay_capacity=1000, batch_size=128, gamma=0.99,
                  tau=0.005, 
                  ):
-        super().__init__(observation_space, action_space, initial_observation=None)
+        # super().__init__(observation_space, action_space, initial_observation=initial_observation)
+        self.observation_space = observation_space
+        self.action_space = action_space
+        self.initial_observation = initial_observation
+        
         self.eps_start = eps_start
         self.eps_end = eps_end
         self.eps_decay = eps_decay
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        # print((self.observation_space.shape[0], self.action_space.n))
-        # self.policy_net = DQN(self.observation_space.shape[0], self.action_space.n).to(self.device)
-        # self.target_net = DQN(self.observation_space.shape[0], self.action_space.n).to(self.device)
         self.policy_net = DQN(1, self.action_space.n).to(self.device)
         self.target_net = DQN(1, self.action_space.n).to(self.device)
         
-        self.replay_buffer = replay_buffer
+        self.replay_capacity = replay_capacity
+        self.replay_buffer = ReplayMemory(self.replay_capacity)
         self.batch_size = batch_size
         self.gamma = gamma
         self.lr = 1e-4
@@ -58,48 +58,84 @@ class DQNAgent(Agent):
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.lr, amsgrad=True)
         self.steps_done = 0 # used for epsilon decay over the timesteps and episodes
         
+        # Survival parameters
         self.initial_budget = initial_budget
         self.b = self.initial_budget
-        
+        self.threshold = threshold
+    
+    # @property
     def reset(self, s, reset_knowledge=True):
+        # super().reset(self, s)
         #time, or number of elapsed rounds 
         self.t = 0
         #memory of the current state and last received reward
-        # self.s = s  if isinstance(s, Iterable)  else  [s]
-        self.s = s
-        # self.s = torch.tensor(s  if isinstance(s, Iterable)  else  [s], dtype=torch.float32, device=self.device).unsqueeze(0)
-        
+        self.s = s  if isinstance(s, Iterable)  else  [s]
+        # self.s = s
         self.r = 0.0
+        self.policy_net = DQN(1, self.action_space.n).to(self.device)
+        self.target_net = DQN(1, self.action_space.n).to(self.device)
+        self.replay_buffer.clear()      
+
+        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.lr, amsgrad=True)
+
+        self.b = self.initial_budget
         #next chosen action
-        #self.a = [None for _ in range(self.num_action_vars)] 
         self.a = self.action_space.sample()
         
     def act(self):
-        # global steps_done
-
-        sample = random.random()
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
-        self.steps_done += 1
+        if self.s is None:
+            raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
         
-        if sample > eps_threshold:
-            with torch.no_grad():
-                self.a = self.policy_net(self.s).argmax().view(1,1)
-                return self.a
         else:
-            self.a = torch.tensor([[self.action_space.sample()]], device=self.device, dtype=torch.long)
-            return self.a
+            eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
+            self.steps_done += 1    
+            
+            if self.b < self.threshold and self.policy_net(self.s).max().item() > 0:
+                sample = random.random()
+                if sample > eps_threshold:
+                    with torch.no_grad():
+                        self.a = self.policy_net(self.s).argmax().view(1,1)
+                        return self.a
+                else:
+                    self.a = torch.tensor([[self.action_space.sample()]], device=self.device, dtype=torch.long)
+                    return self.a
+            
+            else:
+                self.a = torch.tensor([[self.action_space.sample()]], device=self.device, dtype=torch.long)
+                return self.a
+
+            
+            # if self.b > self.threshold:
+            #     self.a = torch.tensor([[self.action_space.sample()]], device=self.device, dtype=torch.long)
+            #     return self.a
+            
+            # else:           
+            #     # with torch.no_grad():
+            #     #     self.a = self.policy_net(self.s).max()[1].view(1, 1)
+            #     #     return self.a
+            
+            #     sample = random.random()
+                
+            #     if sample > eps_threshold:
+            #         with torch.no_grad():
+            #             self.a = self.policy_net(self.s).max()[1].view(1, 1)
+            #             return self.a
+            #     else:
+            #         self.a = torch.tensor([[self.action_space.sample()]], device=self.device, dtype=torch.long)
+            #         return self.a
+
 
     def observe(self, s, r):
         """
             Memorize the observed state and received reward.
         """
         # self.prev_s = self.s
-        # self.s = s  if isinstance(s, Iterable)  else  [s]
-        self.s = s
-        
+        self.s = s  if isinstance(s, Iterable)  else  [s]
+        # self.s = s
         self.r = r
         self.t += 1
         self.b += r.item()
+        
         # Store the transition in memory
         # self.replay_buffer.push(self.prev_s, self.a, self.s, self.r)
     
@@ -121,12 +157,14 @@ class DQNAgent(Agent):
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
-    
-        state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+
+        # self.var = self.policy_net(state_batch.reshape(-1, 1))
+        # return batch
+        state_action_values = self.policy_net(state_batch.reshape(-1, 1)).gather(1, action_batch)
        
         next_state_values = torch.zeros(self.batch_size, device=self.device)
         with torch.no_grad():
-            next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0]
+            next_state_values[non_final_mask] = self.target_net(non_final_next_states.reshape(-1, 1)).max()
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
 

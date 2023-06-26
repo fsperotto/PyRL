@@ -60,7 +60,7 @@ class Agent():
                 last received reward.
     """
 
-    def __init__(self, observation_space, action_space, initial_observation=None, budget=None):
+    def __init__(self, observation_space, action_space, initial_observation=None, initial_budget=None):
         """
         Agent Constructor. 
         The dimensions concerning observable states and actions must be informed.
@@ -84,7 +84,7 @@ class Agent():
         self.reset(initial_observation)
         self.terminal = False
         
-        self.budget = budget
+        self.initial_budget = initial_budget
 
 
     def reset(self, initial_observation, reset_knowledge=True):
@@ -123,21 +123,6 @@ class Agent():
         # self.a = [...]
         #return the chosen action
         return self.a
-<<<<<<< HEAD
-        
-    def observe(self, s, r, terminal=False):
-        """Memorize the observed state and received reward."""
-        self.s = s  #if isinstance(s, Iterable)  else  [s]
-        self.r = r
-        self.terminal = terminal
-        
-    def learn(self):
-        pass
-    
-    def close(self):
-        pass
-        
-=======
 
     def observe(self, s, r, terminated, truncated):
         """Memorize the observed state and received reward."""
@@ -148,13 +133,12 @@ class Agent():
 
         self.t = self.t + 1
 
-        if self.budget is not None:
-            self.budget = self.budget + r
+        if self.initial_budget is not None:
+            self.initial_budget = self.initial_budget + r
 
     def learn(self):
         pass
 
->>>>>>> e119a6a7b37a88f50ceeae351ef82453890e0b57
 ###################################################################
         
 class Env(gym.Env):
@@ -293,8 +277,8 @@ class Sim():
                                 break
                                 #observation, info = env.reset()
                             
-                            if agent.budget is not None:
-                                if agent.budget <= 0:
+                            if agent.initial_budget is not None:
+                                if agent.initial_budget <= 0:
                                     break
 
                         if self.episode_finished_callback is not None:
