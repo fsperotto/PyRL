@@ -42,7 +42,8 @@ class QLearning(Agent):
         if self.should_explore(self) and self.budget > self.survival_threshold:
             a = np.random.randint(0, self.action_space.n)
         else:
-            a = self.Q[self.current_state, :].argmax()
+            maxq = self.Q[self.current_state, :].max()
+            a = np.random.choice(np.flatnonzero(self.Q[self.current_state, :] == maxq))
 
         self.last_action = a
 
@@ -74,8 +75,6 @@ class QLearning(Agent):
 
     def learn(self) -> None:
         self.Q[self.last_state, self.last_action] = (1 - self.learning_rate) * self.Q[self.last_state, self.last_action] + self.learning_rate * (self.current_reward + self.discount * self.Q[self.current_state, :].max())
-
-        return self.Q[self.last_state, self.last_action]
 
     def builtin_should_explore(self, agent: Agent) -> bool:
         pn = np.random.random()

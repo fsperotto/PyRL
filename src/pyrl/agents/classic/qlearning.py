@@ -40,7 +40,8 @@ class QLearning(Agent):
         if self.should_explore(self):
             a = np.random.randint(0, self.action_space.n)
         else:
-            a = self.Q[self.current_state, :].argmax()
+            maxq = self.Q[self.current_state, :].max()
+            a = np.random.choice(np.flatnonzero(self.Q[self.current_state, :] == maxq))
 
         self.last_action = a
 

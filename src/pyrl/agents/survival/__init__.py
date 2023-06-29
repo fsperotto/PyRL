@@ -1,3 +1,3 @@
 from .qlearning import QLearning
-from .cde_learning import CDELearning
+from .klearning import KLearning
 
