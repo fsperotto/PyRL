@@ -7,7 +7,7 @@ name = "pyrl"
 version = "0.0.1"
 authors = [
   {name="Filipo STUDZINSKI PEROTTO", email="filipo.perotto@onera.fr"},
-  {name="Aymane OUHABI", email="aymane.ouhabi@onera.fr"},
+  {name="Aymane OUAHBI", email="aymane.ouahbi@onera.fr"},
   {name="Melvine NARGEOT", email="melvine.nargeot@onera.fr"},
 ]
 description = "Safe and Survival Reinforcement Learning"
@@ -23,8 +23,8 @@ dependencies = [
 	'scipy',
 	'matplotlib',
 	'pandas',
-	'SMPyBandits',
-	'tqdm'
+	'tqdm',
+	'SMPyBandits'
 ]
 
 [project.urls]

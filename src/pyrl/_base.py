@@ -143,7 +143,7 @@ class Env(gym.Env):
 
     metadata = {}
 
-    def __init__(self, observation_space=[2], action_space=[2], render_mode=None):
+    def __init__(self, observation_space=[2], action_space=[2], initial_observation=None, default_action=None, render_mode=None):
         
         self.t = 0
         
@@ -163,6 +163,10 @@ class Env(gym.Env):
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
+        
+        self.initial_observation = initial_observation
+
+        self.default_action = default_action
 
         """
         If human-rendering is used, `self.window` will be a reference to the window that we draw to. 
@@ -174,33 +178,59 @@ class Env(gym.Env):
         
         self.reset()
 
-    def reset(self, *, seed:int=None, options:dict=None) -> tuple:
+
+    def reset(self, *, seed:int=None, initial_observation=None, options:dict=None) -> tuple:
         
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
         
         self.t = 0
 
-        self.s = [0 for _ in range(len(self.states))]
+        if initial_observation is not None:
+            self.s = initial_observation
+        elif self.initial_observation is not None:
+            self.s = self.initial_observation
+        else:
+            self.s = self.observation_space.sample()
+        
         self.r = 0.0
         self.terminated = False
         self.truncated = False
         
-        observation = self._get_obs()
+        #observation = self._get_obs()
+        #observation = self.s
+
         info = self._get_info()
         
-        return observation, info
+        return self.s, info
         
 
     def step(self, action):
+
         self.t += 1
-        return self.s, self.r, self.terminated, self.truncated
         
-    def _get_obs(self):
-        """
-        translates the environment’s state into an observation
-        """
-        pass
+        #action effects
+        # ...
+        # self.s = ...
+        # self.r = ...
+        
+        #observation = self._get_obs()
+        #observation = self.s
+        
+        info = self._get_info()
+
+        if self.render_mode is not None:
+            self._render_frame()
+
+        return self.s, self.r, self.terminated, self.truncated, info
+
+        
+#    def _get_obs(self):
+#        """
+#        translates the environment’s state into an observation
+#        """
+#        #by default, observation is the same than state (a completely observable environment)
+#        return self.s
 
     def _get_info(self):
         """
