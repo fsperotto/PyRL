@@ -101,7 +101,7 @@ class Agent():
         #time, or number of elapsed rounds
         self.t = 0
         #memory of the current state and last received reward
-        self.s = initial_observation  if isinstance(initial_observation, Iterable)  else  [initial_observation]
+        self.s = initial_observation # if isinstance(initial_observation, Iterable)  else  [initial_observation]
         self.r = 0.0
         #next chosen action
         #self.a = [None for _ in range(self.num_action_vars)]
@@ -201,6 +201,8 @@ class Env(gym.Env):
         else:
             self.s = self.observation_space.sample()
         
+        #self.s = 0 #[0 for _ in range(len(self.states))]
+
         self.r = 0.0
         self.terminated = False
         self.truncated = False
@@ -216,6 +218,8 @@ class Env(gym.Env):
     def step(self, action):
 
         self.t += 1
+
+        return self.s, self.r, self.terminated, self.truncated, self._get_info()
         
         #action effects
         # ...
@@ -267,6 +271,13 @@ class Sim():
         self.episode_finished_callback = episode_finished_callback
         self.simulation_finished_callback = simulation_finished_callback
 
+        self.t = 0
+        self.metrics = dict(
+            time = 0,
+            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+            budget = np.zeros((self.episode_horizon,), dtype=int)
+        )
+
     def reset(self):
         pass
 
@@ -292,10 +303,16 @@ class Sim():
 
                         for t in range(1, episode_horizon+1):
 
+                            self.metrics["time"] = self.metrics["time"] + 1
+
                             action = agent.act()  # agent policy that uses the observation and info
+                            env.recharge_mode = hasattr(agent, "recharge_mode") and agent.recharge_mode
                             observation, reward, terminated, truncated, info = env.step(action)
+                            self.metrics["exploration"][observation, action] = self.metrics["exploration"][observation, action] + 1
                             agent.observe(observation, reward, terminated, truncated)
                             agent.learn()
+
+                            self.metrics["budget"][t-1] = agent.budget
 
                             if self.round_finished_callback is not None:
                                 try:
