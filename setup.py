@@ -22,6 +22,10 @@ setup(
 	packages=['pyrl', 'pyrl.mab', 'pyrl.mdp', 'pyrl.replay_buffer', 'pyrl.agents', 'pyrl.environments', 'pyrl.agents.classic', 'pyrl.agents.survival'],
     #packages=find_packages(exclude=['data', 'notebooks']), 
     #packages=find_namespace_packages(include=['smab'],exclude=['extra', 'old', 'notebooks']),
+    #packages=find_packages(),
+	#packages=['pyrl', 'pyrl.mab', 'pyrl.mdp'],
+    # packages=find_packages(exclude=['extra', 'old', 'data', 'temp', 'drafts', 'test', 'notebooks']), 
+    # packages=find_namespace_packages(exclude=['extra', 'old', 'data', 'temp', 'drafts', 'test', 'notebooks']),
     #include_package_data = True,
     #package_data={'corpus': ['corpus']},
     classifiers=[

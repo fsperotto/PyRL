@@ -236,6 +236,7 @@ class Sim():
         self.round_finished_callback = round_finished_callback
         self.episode_finished_callback = episode_finished_callback
         self.simulation_finished_callback = simulation_finished_callback
+        # self.metrics = {"time": 0, "exploration": []}
 
     def reset(self):
         pass
@@ -253,6 +254,7 @@ class Sim():
                 for i in range(num_simulations):
 
                     observation, info = env.reset()
+                    # return observation
                     agent.reset(observation)
 
                     for j in range(num_episodes):
@@ -263,6 +265,7 @@ class Sim():
                         for t in range(1, episode_horizon+1):
 
                             action = agent.act()  # agent policy that uses the observation and info
+                            # self.metrics["exploration"].append((observation, action))
                             observation, reward, terminated, truncated, info = env.step(action)
                             agent.observe(observation, reward, terminated, truncated)
                             agent.learn()
@@ -270,20 +273,24 @@ class Sim():
                             if self.round_finished_callback is not None:
                                 try:
                                     self.episode_finished_callback(env, agent)
+                                    # self.metrics["time"] = t                                
                                 except Exception as e:
                                     print(str(e))
 
                             if terminated or truncated:
+                                # self.metrics["time"] = t
                                 break
                                 #observation, info = env.reset()
                             
                             if agent.initial_budget is not None:
                                 if agent.initial_budget <= 0:
+                                    # self.metrics["time"] = t
                                     break
 
                         if self.episode_finished_callback is not None:
                             try:
                                 self.episode_finished_callback(env, agent)
+                                # self.metrics["time"] = t
                             except Exception as e:
                                 print(str(e))
 

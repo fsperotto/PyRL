@@ -34,7 +34,7 @@ class SurvivalDQNAgent(Agent):
     def __init__(self, observation_space, action_space, initial_observation=None,
                  initial_budget=100, threshold=30, eps_start=0.9, eps_end=0.05, eps_decay=1000,
                  replay_capacity=1000, batch_size=128, gamma=0.99,
-                 tau=0.005, 
+                 learning_rate=1e-4, tau=0.005, 
                  ):
         # super().__init__(observation_space, action_space, initial_observation=initial_observation)
         self.observation_space = observation_space
@@ -53,7 +53,7 @@ class SurvivalDQNAgent(Agent):
         self.replay_buffer = ReplayMemory(self.replay_capacity)
         self.batch_size = batch_size
         self.gamma = gamma
-        self.lr = 1e-4
+        self.lr = learning_rate
         self.tau = tau
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.lr, amsgrad=True)
         self.steps_done = 0 # used for epsilon decay over the timesteps and episodes
@@ -68,6 +68,8 @@ class SurvivalDQNAgent(Agent):
         # super().reset(self, s)
         #time, or number of elapsed rounds 
         self.t = 0
+        self.steps_done = 0 # used for epsilon decay over the timesteps and episodes
+        
         #memory of the current state and last received reward
         self.s = s  if isinstance(s, Iterable)  else  [s]
         # self.s = s
@@ -87,7 +89,8 @@ class SurvivalDQNAgent(Agent):
             raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
         
         else:
-            eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
+            # eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
+            eps_threshold = (1 - (1 / math.log(self.steps_done + 2)))
             self.steps_done += 1    
             
             if self.b < self.threshold and self.policy_net(self.s).max().item() > 0:
