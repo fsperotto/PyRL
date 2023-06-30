@@ -283,7 +283,6 @@ class Sim():
 
 
     def run(self, episode_horizon=None, num_episodes=None, num_simulations=None):
-
         episode_horizon = episode_horizon  if  episode_horizon is not None else self.episode_horizon
         num_episodes = num_episodes  if  num_episodes is not None  else  self.num_episodes
         num_simulations = num_simulations  if  num_simulations is not None   else  self.num_simulations
@@ -316,14 +315,14 @@ class Sim():
 
                             if self.round_finished_callback is not None:
                                 try:
-                                    self.episode_finished_callback(env, agent)
+                                    self.round_finished_callback(env, agent)
                                 except Exception as e:
                                     print(str(e))
 
                             if terminated or truncated:
                                 break
                                 #observation, info = env.reset()
-                            
+
                             if agent.budget is not None:
                                 if agent.budget <= 0:
                                     break
@@ -339,3 +338,6 @@ class Sim():
                             self.simulation_finished_callback(env, agent)
                         except Exception as e:
                             print(str(e))
+#        except Exception as e:
+#            if env is not None:
+#                env.close()
