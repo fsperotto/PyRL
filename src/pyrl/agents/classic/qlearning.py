@@ -9,7 +9,10 @@ from pyrl import Agent
 class QLearning(Agent):
     """The QLearning class"""
 
-    def __init__(self, observation_space: Space, action_space: Space, initial_observation=None, discount=0.9, learning_rate=0.1, should_explore: Callable=None, initial_Q: np.ndarray=None, initial_Q_value: float=None, budget: int=None):
+    def __init__(self, observation_space: Space, action_space: Space, initial_observation=None, 
+                 discount=0.9, learning_rate=0.1, exploration_rate=None, should_explore=None, 
+                 initial_Q: np.ndarray=None, initial_Q_value: float=None, budget: int=None):
+        
         self.initial_Q = initial_Q
         self.initial_Q_value = initial_Q_value
 
@@ -22,7 +25,13 @@ class QLearning(Agent):
         self.time = 0
         self.discount = discount
         self.learning_rate = learning_rate
-        self.should_explore = should_explore if should_explore is not None else self.builtin_should_explore
+        self.exploration_rate = exploration_rate
+        if should_explore is not None:
+            self.should_explore = should_explore  
+        elif exploration_rate is not None:
+            self.should_explore = self.builtin_epsilon_should_explore
+        else:
+            self.should_explore = self.builtin_log_decreasing_should_explore
         self.saved_should_explore = self.should_explore
 
         if initial_Q is not None:
@@ -77,9 +86,12 @@ class QLearning(Agent):
 
         return self.Q[self.last_state, self.last_action]
 
-    def builtin_should_explore(self, agent: Agent) -> bool:
-        pn = np.random.random()
-        return pn < (1 - (1 / math.log(self.time + 2)))
+    def builtin_log_decreasing_should_explore(self, agent: Agent) -> bool:
+        return np.random.random() < (1 - (1 / math.log(self.time + 2)))
+    
+    def builtin_epsilon_should_explore(self, agent: Agent) -> bool:
+        return np.random.rand() < self.exploration_rate
+    
 
     def Q_check(self, Q: np.ndarray) -> None:
         if Q.shape is not (self.observation_space.n, self.action_space.n):

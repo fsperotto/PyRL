@@ -13,7 +13,8 @@ class KLearning(QLearning):
         super().__init__(observation_space, action_space, initial_observation, discount, learning_rate, should_explore, initial_Q, initial_Q_value, budget, survival_threshold)
 
     def act(self) -> list:
-        if self.recharge_mode:
+        #if self.recharge_mode and maxq > 0:
+        if self.recharge_mode :
             maxq = self.Q[self.current_state, :].max()
             a = np.random.choice(np.flatnonzero(self.Q[self.current_state, :] == maxq))
         else:
