@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
 setup(
     name="pyrl",
     version="0.0.1",
-    author="Filipo Studzinski Perotto, Aymane Ouhabi, Melvine Nargeot",
+    author="Filipo Studzinski Perotto, Aymane Ouahbi, Melvine Nargeot",
     author_email="filipo.perotto@onera.fr",
     description="Safe and Survival Reinforcement Learning",
     long_description=long_description,

@@ -23,8 +23,8 @@ dependencies = [
 	'scipy',
 	'matplotlib',
 	'pandas',
-	'SMPyBandits',
-	'tqdm'
+	'tqdm',
+	'SMPyBandits'
 ]
 
 [project.urls]

@@ -101,7 +101,7 @@ class Agent():
         #time, or number of elapsed rounds
         self.t = 0
         #memory of the current state and last received reward
-        self.s = initial_observation  if isinstance(initial_observation, Iterable)  else  [initial_observation]
+        self.s = initial_observation # if isinstance(initial_observation, Iterable)  else  [initial_observation]
         self.r = 0.0
         #next chosen action
         #self.a = [None for _ in range(self.num_action_vars)]
@@ -151,7 +151,7 @@ class Env(gym.Env):
 
     metadata = {}
 
-    def __init__(self, observation_space=[2], action_space=[2], render_mode=None):
+    def __init__(self, observation_space=[2], action_space=[2], initial_observation=None, default_action=None, render_mode=None):
         
         self.t = 0
         
@@ -171,6 +171,10 @@ class Env(gym.Env):
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
+        
+        self.initial_observation = initial_observation
+
+        self.default_action = default_action
 
         """
         If human-rendering is used, `self.window` will be a reference to the window that we draw to. 
@@ -182,33 +186,63 @@ class Env(gym.Env):
         
         self.reset()
 
-    def reset(self, *, seed:int=None, options:dict=None) -> tuple:
+
+    def reset(self, *, seed:int=None, initial_observation=None, options:dict=None) -> tuple:
         
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
         
         self.t = 0
 
-        self.s = [0 for _ in range(len(self.states))]
+        if initial_observation is not None:
+            self.s = initial_observation
+        elif self.initial_observation is not None:
+            self.s = self.initial_observation
+        else:
+            self.s = self.observation_space.sample()
+        
+        #self.s = 0 #[0 for _ in range(len(self.states))]
+
         self.r = 0.0
         self.terminated = False
         self.truncated = False
         
-        observation = self._get_obs()
+        #observation = self._get_obs()
+        #observation = self.s
+
         info = self._get_info()
         
-        return observation, info
+        return self.s, info
         
 
     def step(self, action):
+
         self.t += 1
-        return self.s, self.r, self.terminated, self.truncated
+
+        return self.s, self.r, self.terminated, self.truncated, self._get_info()
         
-    def _get_obs(self):
-        """
-        translates the environment’s state into an observation
-        """
-        pass
+        #action effects
+        # ...
+        # self.s = ...
+        # self.r = ...
+        
+        #observation = self._get_obs()
+        #observation = self.s
+        
+        info = self._get_info()
+
+        if self.render_mode is not None:
+            self._render_frame()
+
+        return self.s, self.r, self.terminated, self.truncated, info
+
+        
+#    def _get_obs(self):
+#        """
+#        translates the environment’s state into an observation
+#        """
+#        #by default, observation is the same than state (a completely observable environment)
+#        return self.s
 
     def _get_info(self):
         """
@@ -238,12 +272,39 @@ class Sim():
         self.simulation_finished_callback = simulation_finished_callback
         # self.metrics = {"time": 0, "exploration": []}
 
+        self.t = 0
+        self.metrics = dict(
+            time = 0,
+            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+            budget = np.zeros((self.episode_horizon,), dtype=int)
+        )
+
+        self.t = 0
+        self.metrics = dict(
+            time = 0,
+            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+            budget = np.zeros((self.episode_horizon,), dtype=int)
+        )
+
+        self.t = 0
+        self.metrics = dict(
+            time = 0,
+            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+            budget = np.zeros((self.episode_horizon,), dtype=int)
+        )
+
+        self.t = 0
+        self.metrics = dict(
+            time = 0,
+            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+            budget = np.zeros((self.episode_horizon,), dtype=int)
+        )
+
     def reset(self):
         pass
 
 
     def run(self, episode_horizon=None, num_episodes=None, num_simulations=None):
-
         episode_horizon = episode_horizon  if  episode_horizon is not None else self.episode_horizon
         num_episodes = num_episodes  if  num_episodes is not None  else  self.num_episodes
         num_simulations = num_simulations  if  num_simulations is not None   else  self.num_simulations
@@ -264,15 +325,21 @@ class Sim():
 
                         for t in range(1, episode_horizon+1):
 
+                            self.metrics["time"] = self.metrics["time"] + 1
+
                             action = agent.act()  # agent policy that uses the observation and info
                             # self.metrics["exploration"].append((observation, action))
+                            env.recharge_mode = hasattr(agent, "recharge_mode") and agent.recharge_mode
                             observation, reward, terminated, truncated, info = env.step(action)
+                            self.metrics["exploration"][observation, action] = self.metrics["exploration"][observation, action] + 1
                             agent.observe(observation, reward, terminated, truncated)
                             agent.learn()
 
+                            self.metrics["budget"][t-1] = agent.budget
+
                             if self.round_finished_callback is not None:
                                 try:
-                                    self.episode_finished_callback(env, agent)
+                                    self.round_finished_callback(env, agent)
                                     # self.metrics["time"] = t                                
                                 except Exception as e:
                                     print(str(e))
@@ -281,10 +348,9 @@ class Sim():
                                 # self.metrics["time"] = t
                                 break
                                 #observation, info = env.reset()
-                            
-                            if agent.initial_budget is not None:
-                                if agent.initial_budget <= 0:
-                                    # self.metrics["time"] = t
+
+                            if agent.budget is not None:
+                                if agent.budget <= 0:
                                     break
 
                         if self.episode_finished_callback is not None:
@@ -299,3 +365,6 @@ class Sim():
                             self.simulation_finished_callback(env, agent)
                         except Exception as e:
                             print(str(e))
+#        except Exception as e:
+#            if env is not None:
+#                env.close()
