@@ -9,82 +9,105 @@ from pyrl import Agent
 class QLearning(Agent):
     """The QLearning class"""
 
-    def __init__(self, observation_space: Space, action_space: Space, initial_observation=None, 
+    def __init__(self, observation_space: Space, action_space: Space,
+                 default_action=None, initial_budget:float=None,
                  discount=0.9, learning_rate=0.1, exploration_rate=None, should_explore=None, 
-                 initial_Q: np.ndarray=None, initial_Q_value: float=None, budget: int=None):
+                 initial_Q: np.ndarray=None, initial_Q_value: float=None):
+        
+        super().__init__(observation_space=observation_space, 
+                         action_space=action_space, 
+                         initial_budget=initial_budget,
+                         default_action=default_action)
+        
+        #memory
+        self.last_s = None
         
         self.initial_Q = initial_Q
         self.initial_Q_value = initial_Q_value
-
-        super(QLearning, self).__init__(observation_space, action_space, initial_observation, budget)
-
-        self.current_state = initial_observation
-        self.current_reward = None
-        self.last_action = None
-        self.last_state = None
-        self.time = 0
-        self.discount = discount
-        self.learning_rate = learning_rate
-        self.exploration_rate = exploration_rate
-        if should_explore is not None:
-            self.should_explore = should_explore  
-        elif exploration_rate is not None:
-            self.should_explore = self.builtin_epsilon_should_explore
-        else:
-            self.should_explore = self.builtin_log_decreasing_should_explore
-        self.saved_should_explore = self.should_explore
 
         if initial_Q is not None:
             self.Q_check(initial_Q)
             self.initial_Q = initial_Q
         elif initial_Q_value is not None:
             self.initial_Q_value = initial_Q_value
+        
 
-        self.reset(initial_observation, reset_knowledge=True)
-
-    def act(self) -> list:
-        if self.current_state is None:
-            raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
-
-        if self.should_explore(self):
-            a = np.random.randint(0, self.action_space.n)
+        self.discount = discount
+        self.learning_rate = learning_rate
+        self.exploration_rate = exploration_rate
+        
+        if should_explore is not None:
+            self.should_explore = should_explore  
+        elif exploration_rate is not None:
+            self.should_explore = self.builtin_epsilon_should_explore
         else:
-            maxq = self.Q[self.current_state, :].max()
-            a = np.random.choice(np.flatnonzero(self.Q[self.current_state, :] == maxq))
+            self.should_explore = self.builtin_log_decreasing_should_explore
 
-        self.last_action = a
+        self.Q = None
+        self.N = None
+        
+        #self.reset(initial_observation, reset_knowledge=True)
 
-        return a
 
-    def reset(self, state: int, reset_knowledge=True) -> int:
-        super(QLearning, self).reset(state, reset_knowledge)
-        self.current_state = state
-        self.time = 0
 
+    def reset(self, initial_observation, reset_knowledge=True, reset_budget=True, learning=True):
+    
+        super().reset(initial_observation=initial_observation, 
+                      reset_knowledge=reset_knowledge,
+                      reset_budget=reset_budget,
+                      learning=learning)
+        
         if reset_knowledge:
             if self.initial_Q is not None:
                 self.Q = self.initial_Q
             elif self.initial_Q_value is not None:
-                self.Q = np.full((self.observation_space.n, self.action_space.n), self.initial_Q_value, dtype=float)
+                self.Q = np.full(self.observation_shape + self.action_shape, self.initial_Q_value, dtype=float)
             else:
-                self.Q = np.full((self.observation_space.n, self.action_space.n), 0, dtype=float)
+                self.Q = np.random.sample(self.observation_shape + self.action_shape)
+                
+            self.N = np.zeros(self.observation_shape + self.action_shape, dtype=int)
 
-    def observe(self, state: int, reward: float, terminated: bool, truncated: bool) -> None:
-        if self.current_state is None:
-            raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
+
+
+    def choose_action(self):
+        #if the agent was not reseted after initialization, then reset
+        if self.should_reset:
+            raise ValueError("ERROR: Agent properties should be initilized. Maybe you forgot to call the reset method ?")
+
+        if self.should_explore(self):
+            a = self.action_space.sample()
+        else:
+            #Q_s = np.take(self.Q, self.get_state())
+            Q_s = self.Q[self.get_state()]
+            maxq = Q_s.max()
+            a = np.random.choice(np.flatnonzero(Q_s == maxq))
+
+        self.a = a
+
+        return a
+
+
+
+    def observe(self, state, reward: float, terminated: bool, truncated: bool) -> None:
+        #if the agent was not reseted after initialization, then reset
+        if self.should_reset:
+            raise ValueError("ERROR: Agent properties should be initilized. Maybe you forgot to call the reset method ?")
         
         super().observe(state, reward, terminated=terminated, truncated=truncated)
 
-        """Memorize the observed state and received reward."""
-        self.last_state = self.current_state
-        self.current_state = state
-        self.current_reward = reward
-        self.time = self.time + 1
+        self.last_s = self.s
+
 
     def learn(self) -> None:
-        self.Q[self.last_state, self.last_action] = (1 - self.learning_rate) * self.Q[self.last_state, self.last_action] + self.learning_rate * (self.current_reward + self.discount * self.Q[self.current_state, :].max())
-
-        return self.Q[self.last_state, self.last_action]
+        #self.Q[self.last_state, self.last_action] = (1 - self.learning_rate) * self.Q[self.last_state, self.last_action] + self.learning_rate * (self.current_reward + self.discount * self.Q[self.current_state, :].max())
+        index_sa = self.get_state(self.last_s) + self.get_action()
+        self.N[index_sa] += 1
+        index_s = self.get_state()
+        Q_sa = self.Q[index_sa]
+        Q_s = self.Q[index_s]
+        new_q = (1 - self.learning_rate) * Q_sa + self.learning_rate * (self.r + self.discount * Q_s.max())
+        self.Q[index_sa] = new_q
+        return new_q
 
     def builtin_log_decreasing_should_explore(self, agent: Agent) -> bool:
         return np.random.random() < (1 - (1 / math.log(self.time + 2)))

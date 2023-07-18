@@ -9,7 +9,10 @@ from pyrl import Env
 class SurvivalEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
 
-    def __init__(self, render_mode: str=None, size: Union[int, Tuple[int, int]]=20, minor_r=5, major_r=20, step_r=-1, random=False) -> None:
+    def __init__(self, render_mode: str=None, 
+                 size: Union[int, Tuple[int, int]]=20, 
+                 minor_r=5, major_r=20, step_r=-1, 
+                 random=False) -> None:
         
         self.size = np.array(size)
         if not isinstance(size, tuple):
