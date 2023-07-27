@@ -178,9 +178,10 @@ class QLearning(Agent):
         if self.should_reset:
             raise ValueError("ERROR: Agent properties should be initilized. Maybe you forgot to call the reset method ?")
         
+        self.last_s = self.s
+
         super().observe(state, reward, terminated=terminated, truncated=truncated)
 
-        self.last_s = self.s
 
 
     #--------------------------------------------------------------    
@@ -194,8 +195,8 @@ class QLearning(Agent):
         if self.store_N:
            self.N[index_sa] += 1
            
-        #index_next_s = self.get_state()
-        index_next_s = self.s
+        index_next_s = self.get_state()
+        #index_next_s = self.s
         
         Q_sa = self.Q[index_sa]
         

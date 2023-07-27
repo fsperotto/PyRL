@@ -14,11 +14,39 @@ from pyrl.environments.grid import GridEnv, GridEnvGUI
 
 #################################################
 
-num_rows=3
-num_cols=20
+#ENVIRONMENT PARAMETERS
+num_rows=5
+num_cols=30
 
 minor_r = 5.0
-major_r = 100.0
+major_r = 20.0
+
+#SIMULATION PARAMETERS
+
+horizon = 2000
+
+initial_budget = 300
+
+repeat = 5
+
+episodes = 100
+
+#CLASSIC Q-LEARNING AGENT PARAMETERS
+initial_Q_value = 0.0
+gamma = 0.95 #discount factor
+alpha = 0.5 #learning rate
+epsilon_Q=0.1 #exploration rate
+
+#SURVIVAL Q-LEARNING AGENT PARAMETERS
+survival_threshold = 200 
+
+#K-LEARNING AGENT PARAMETERS
+initial_K_value = 200
+exploration_threshold = 400
+epsilon_K=0.00 #exploration rate
+
+
+#################################################
 
 #env = GridEnv(num_cols=3, num_rows=4, reward_matrix=[[-1,-1,5,-1],[0,0,0,0],[-1,-1,-1,100]], reward_mode="s'", render_mode="external")
 #env = GridEnv(num_rows=num_rows, num_cols=num_cols, reward_mode="s'", render_mode="external")
@@ -30,13 +58,6 @@ env = GridEnv(num_rows=num_rows, num_cols=num_cols,
               reward_mode="s'", reward_targets=reward_targets, default_reward=-1.0,
               render_mode="external")
 
-horizon = 100000
-
-initial_budget = 400
-
-repeat = 5
-
-episodes = 1
 
 def repetition_started_callback(sim):
     print("START REPETITION", sim.rep+1, '/', sim.num_repetitions)
@@ -88,12 +109,6 @@ def round_finished_callback(sim):
 #                           observation_space = env.observation_space, 
 #                           action_space = env.action_space)
 
-initial_Q_value = 0.0
-gamma = 0.95 #discount factor
-alpha = 0.5 #learning rate
-
-epsilon_Q=0.4 #exploration rate
-
 agent_Q = ClassicQLearning(observation_space = env.observation_space, 
                            action_space = env.action_space, 
                            initial_budget=initial_budget, 
@@ -101,8 +116,6 @@ agent_Q = ClassicQLearning(observation_space = env.observation_space,
                            learning_rate=alpha,
                            exploration_rate=epsilon_Q,
                            initial_Q_value=initial_Q_value)
-
-survival_threshold = 250 
 
 agent_ST_Q = SurvivalQLearning(observation_space = env.observation_space, 
                            action_space = env.action_space, 
@@ -112,10 +125,6 @@ agent_ST_Q = SurvivalQLearning(observation_space = env.observation_space,
                            exploration_rate=epsilon_Q,
                            initial_Q_value=initial_Q_value,
                            survival_threshold=survival_threshold)
-
-initial_K_value = 200
-exploration_threshold = 500
-epsilon_K=0.1 #exploration rate
 
 agent_K = KLearning(observation_space = env.observation_space, 
                            action_space = env.action_space, 

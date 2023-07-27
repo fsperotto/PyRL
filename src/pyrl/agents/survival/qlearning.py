@@ -35,7 +35,9 @@ class QLearning(ClassicQLearning):
         self.survival_threshold = survival_threshold
         
 
+    #--------------------------------------------------------------    
     def choose_action(self):
+        
         if self.s is None:
             raise ValueError("current_state property should be initilized. Maybe you forgot to call the reset method ?")
 
@@ -50,12 +52,5 @@ class QLearning(ClassicQLearning):
 
         return a
 
-
-    def reset(self, initial_observation, reset_knowledge=True, reset_budget=True, learning=True):
-
-        super().reset(initial_observation=initial_observation, 
-                      reset_knowledge=reset_knowledge,
-                      reset_budget=reset_budget,
-                      learning=learning)
 
 
