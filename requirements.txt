@@ -1,8 +1,11 @@
 numpy
 matplotlib
-tqdm
 scipy
 pandas
+tqdm
 ray
 SMPyBandits
 gymnasium
+pygame
+pymdptoolbox
+tensorforce

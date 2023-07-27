@@ -24,7 +24,12 @@ dependencies = [
 	'matplotlib',
 	'pandas',
 	'tqdm',
-	'SMPyBandits'
+	'ray',
+	'SMPyBandits',
+	'gymnasium',
+	'pygame',
+	'pymdptoolbox',
+	'tensorforce'
 ]
 
 [project.urls]

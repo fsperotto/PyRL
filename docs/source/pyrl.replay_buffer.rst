@@ -1,7 +1,11 @@
-pyrl.replay\_buffer namespace
-=============================
+pyrl.replay\_buffer package
+===========================
 
-.. py:module:: pyrl.replay_buffer
+.. automodule:: pyrl.replay_buffer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
 
 Submodules
 ----------

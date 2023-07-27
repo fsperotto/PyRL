@@ -2,70 +2,72 @@ import gymnasium as gym
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyrl.agents.classic import QLearning as ClassicQLearning
-from pyrl.agents.survival import QLearning as SurvivalQLearning
-from pyrl.agents.survival import KLearning
-from pyrl.environments.survival import SurvivalEnv
 from pyrl import Sim, Agent, EnvWrapper, System
 
-from pyrl.environments.grid import GridEnv, GridEnvRender
+#################################################
+
+env = gym.make('MountainCar-v0')
 
 #################################################
 
-env = EnvWrapper(gym.make('CartPole-v1', render_mode='human'))
-agent = Agent(env.observation_space, env.action_space)
-system = System(env=env, agent=agent)
+def start_episode_callback(sim):
+   print("START EPISODE", sim.ep+1, '/', sim.num_episodes)
 
-system.reset()
-
-for i in range(200):
-    state, observation, action, reward, terminated, truncated, info = system.step()
-    if terminated or truncated:
-        system.reset()
-
-env.close()
-
+def end_episode_callback(sim):
+   print(sim.t, 'rounds')
+   
 #################################################
 
-horizon = 2000
+horizon = 500
+
+num_episodes = 5
 
 env = EnvWrapper(gym.make('CartPole-v1', render_mode='human'))
 agent = Agent(observation_space = env.observation_space, action_space = env.action_space)
 
-def simulation_started_callback(sim, env, agent):
-    print("START SIM")
-    #print(env.observation_shape)
-    #print(env.action_shape)
+sim = Sim(agent, env, num_episodes=num_episodes, episode_horizon=horizon)
 
-def simulation_finished_callback(sim, env, agent):
-    print("END SIM")
-
-def episode_started_callback(sim, env, agent):
-    print("START EPISODE")
-
-def episode_finished_callback(sim, env, agent):
-    print("END EPISODE")
-
-def round_started_callback(sim, env, agent):
-    #print("START ROUND")
-    pass
-
-def round_finished_callback(sim, env, agent):
-    #print("END ROUND")
-    pass
-
-sim = Sim(agent, env, episode_horizon=horizon,
-         simulation_started_callback=simulation_started_callback,
-         simulation_finished_callback=simulation_finished_callback,
-         episode_started_callback=episode_started_callback,
-         episode_finished_callback=episode_finished_callback,
-         round_started_callback=round_started_callback,
-         round_finished_callback=round_finished_callback
-         )
+sim.add_listener('episode_started', start_episode_callback )
+sim.add_listener('episode_finished', end_episode_callback )
 
 sim.run()
 
-
+#env.close()
 
 ###################################################
 
+horizon = 500
+
+num_episodes = 20
+
+env = EnvWrapper(gym.make('FrozenLake-v1', render_mode='ansi'))
+#env = EnvWrapper(gym.make('Taxi-v3', render_mode='human', fps=40))
+agent = Agent(observation_space = env.observation_space, action_space = env.action_space)
+
+sim = Sim(agent, env, num_episodes=num_episodes, episode_horizon=horizon)
+
+sim.add_listener('episode_started', start_episode_callback )
+sim.add_listener('episode_finished', end_episode_callback )
+
+sim.run()
+
+#env.close()
+
+###################################################
+
+horizon = 500
+
+num_episodes = 20
+
+#env = EnvWrapper(gym.make('FrozenLake-v1', render_mode='ansi'))
+env = EnvWrapper(gym.make('Taxi-v3', render_mode='ansi'))
+agent = Agent(observation_space = env.observation_space, action_space = env.action_space)
+
+sim = Sim(agent, env, num_episodes=num_episodes, episode_horizon=horizon)
+
+sim.add_listener('episode_started', start_episode_callback )
+sim.add_listener('episode_finished', end_episode_callback )
+
+sim.run()
+
+#env.close()

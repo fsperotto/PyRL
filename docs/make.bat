@@ -35,7 +35,7 @@ echo Calling sphinx-apidoc...
 echo Calling sphinx-build...
 if "%1" == "" (
 	%SPHINXBUILD% -M clean %SOURCEDIR% %BUILDDIR%
-	%SPHINXBUILD% -M %MODE% %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+	%SPHINXBUILD% -M html %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 ) else (
 	%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 )

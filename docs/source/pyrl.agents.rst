@@ -14,15 +14,4 @@ Subpackages
    :maxdepth: 4
 
    pyrl.agents.classic
-
-Submodules
-----------
-
-pyrl.agents.DQN module
-----------------------
-
-.. automodule:: pyrl.agents.DQN
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :private-members:
+   pyrl.agents.survival
