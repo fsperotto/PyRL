@@ -1,6 +1,6 @@
 from gymnasium.envs.registration import register
 from .survival import SurvivalEnv
-from .tensorforce_survival import CustomEnvironment
+#from .tensorforce_survival import CustomEnvironment
 from .simple_survival import SimpleSurvivalEnv
 
 register(

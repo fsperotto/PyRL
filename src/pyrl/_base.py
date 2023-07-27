@@ -305,8 +305,8 @@ class Agent():
 
         self.t = self.t + 1
 
-        if self.budget is not None:
-            self.budget = self.budget + r
+        if self.b is not None:
+            self.b = self.b + r
 
     #--------------------------------------------------------------    
     def learn(self):
@@ -1257,11 +1257,11 @@ class Sim(EventBasedObject):
         self.reset()
         # self.metrics = {"time": 0, "exploration": []}
 
-        self.metrics = dict(
-            time = 0,
-            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
-            budget = np.zeros((self.episode_horizon,), dtype=int)
-        )
+        #self.metrics = dict(
+        #    time = 0,
+        #    exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+        #    budget = np.zeros((self.episode_horizon,), dtype=int)
+        #)
 
     #--------------------------------------------------------------    
     def reset(self):
@@ -1442,7 +1442,7 @@ class Sim(EventBasedObject):
           except KeyboardInterrupt:
              self.close()
              print("KeyboardInterrupt: simulation interrupted by the user.")
-             #sys.exit()
+             sys.exit()
    
           except:
              self.close()
