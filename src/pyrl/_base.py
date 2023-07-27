@@ -166,8 +166,6 @@ class Agent():
         #last received reward
         self.r = None
         
-        #current budget
-        self.b = None
 
         self.learning = None
 
@@ -307,14 +305,8 @@ class Agent():
 
         self.t = self.t + 1
 
-        if self.b is not None:
-            self.b = self.b + r
-            if self.b <= 0:
-                self.ruined = True
-        
-        if self.learning:
-            self.learn()
-
+        if self.budget is not None:
+            self.budget = self.budget + r
 
     #--------------------------------------------------------------    
     def learn(self):
@@ -764,6 +756,7 @@ class Env(gym.Env):
             self.reset()
 
         self.t += interval
+
 
         #action effects
         # ...
@@ -1262,7 +1255,13 @@ class Sim(EventBasedObject):
         self.close_on_finish = close_on_finish
         
         self.reset()
+        # self.metrics = {"time": 0, "exploration": []}
 
+        self.metrics = dict(
+            time = 0,
+            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+            budget = np.zeros((self.episode_horizon,), dtype=int)
+        )
 
     #--------------------------------------------------------------    
     def reset(self):

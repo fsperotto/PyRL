@@ -101,6 +101,7 @@ class SurvivalEnv(gym.Env):
 
    
     def step(self, action):
+        done = False
         self.t = self.t + 1
         old_agent_location = self._get_obs()
         direction = self._action_to_direction[action]
