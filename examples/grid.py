@@ -23,11 +23,11 @@ major_r = 20.0
 
 #SIMULATION PARAMETERS
 
-horizon = 2
+horizon = 2000
 
 initial_budget = 300
 
-repeat = 2
+repeat = 50
 
 episodes = 1
 
@@ -170,3 +170,53 @@ gui.launch(give_first_step=True, start_running=True)
 
 
 ###################################################
+"""
+env = GridEnv(num_rows=num_rows, num_cols=num_cols, 
+              reward_mode="s'", reward_targets=reward_targets, default_reward=-1.0,
+              render_mode="external")
+
+
+initial_Q_value = 0.0
+initial_K_value = 200
+survival_threshold = 250
+exploration_threshold = 500
+gamma = 0.95 #discount factor
+alpha = 0.5 #learning rate
+epsilon=0.5 #exploration rate
+initial_budget = 500
+
+agent_K = KLearning(
+    env.observation_space,
+    env.action_space,
+    initial_budget=initial_budget,
+    should_explore=None,
+    discount=gamma,
+    learning_rate=alpha,
+    initial_Q_value=initial_Q_value,
+    initial_K_value=initial_K_value,
+    survival_threshold=survival_threshold,
+    exploration_threshold=exploration_threshold,
+)
+
+window = GridEnvRender(env, agent_K, cell_size=30)
+
+env._render_frame = window.refresh
+
+sim = Sim( agent_K, env, episode_horizon=horizon, 
+         simulation_started_callback=simulation_started_callback,
+         simulation_finished_callback=simulation_finished_callback,
+         episode_started_callback=episode_started_callback,
+         episode_finished_callback=episode_finished_callback,
+         round_started_callback=round_started_callback,
+         round_finished_callback=round_finished_callback
+         )
+
+
+try:
+    sim.run()
+except:
+    env.close()
+    raise
+
+env.close()
+"""

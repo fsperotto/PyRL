@@ -54,3 +54,12 @@ pyrl.environments.survival module
    :undoc-members:
    :show-inheritance:
    :private-members:
+
+pyrl.environments.tensorforce\_survival module
+----------------------------------------------
+
+.. automodule:: pyrl.environments.tensorforce_survival
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:

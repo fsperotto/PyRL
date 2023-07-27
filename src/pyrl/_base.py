@@ -289,7 +289,8 @@ class Agent():
         return self.a
 
 
-
+    act = choose_action
+    
     #--------------------------------------------------------------    
     def observe(self, s, r, terminated, truncated):
 

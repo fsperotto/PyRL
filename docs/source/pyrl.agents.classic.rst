@@ -54,3 +54,12 @@ pyrl.agents.classic.tensorforce\_dqn module
    :undoc-members:
    :show-inheritance:
    :private-members:
+
+pyrl.agents.classic.tf\_a2c module
+----------------------------------
+
+.. automodule:: pyrl.agents.classic.tf_a2c
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
