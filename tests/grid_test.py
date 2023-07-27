@@ -27,9 +27,9 @@ horizon = 2000
 
 initial_budget = 300
 
-repeat = 5
+repeat = 50
 
-episodes = 100
+episodes = 1
 
 #CLASSIC Q-LEARNING AGENT PARAMETERS
 initial_Q_value = 0.0

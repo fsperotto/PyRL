@@ -109,11 +109,10 @@ class QLearning(Agent):
        
        for obs in self.observation_iterator:
            
-           if self.store_V:
-              v = self.V[obs]
-           else:
-              v = self.Q[obs].max()
+           # V(s) is max Q(s,a)
+           v = self.V[obs] if self.store_V else self.Q[obs].max()
               
+           # Pi(s) is arg max Q(s,a)
            for a in self.action_iterator:
               if self.Q[obs + a] == v:
                  self.policy[obs + a] = 1
@@ -219,7 +218,7 @@ class QLearning(Agent):
 
     #--------------------------------------------------------------    
     def builtin_log_decreasing_should_explore(self, agent: Agent) -> bool:
-        return np.random.random() < (1 - (1 / math.log(self.time + 2)))
+        return np.random.random() < (1 - (1 / math.log(self.t + 2)))
     
     def builtin_epsilon_should_explore(self, agent: Agent) -> bool:
         return np.random.rand() < self.exploration_rate
