@@ -63,6 +63,8 @@ class CustomEnvironment(Environment):
         self.window = None
         self.clock = None
         
+        self.num_cols = self.size[0]
+        self.num_rows = self.size[1]
 
     def states(self):
         return dict(type='int', shape=(), num_values=self.observation_space.n)
@@ -78,6 +80,7 @@ class CustomEnvironment(Environment):
     
     def _get_obs(self) -> int:
         return self._agent_location[0] * self.size[1] + self._agent_location[1]
+        # return self._agent_location
 
     def _get_info(self) -> dict:
         return dict()
@@ -100,9 +103,6 @@ class CustomEnvironment(Environment):
 
         return observation
     
-    def manhattan_distance(self, a, b):
-       return sum(abs(val1-val2) for val1, val2 in zip(a,b))
-
     def execute(self, actions):
         done = False
         self.t = self.t + 1
@@ -135,6 +135,7 @@ class CustomEnvironment(Environment):
         if self.terminate and np.array_equal(self._agent_location, self._target_locations[0]):
             done = True
          
+        # return observation, reward, done, False, info
         return observation, done, reward
     
     def render(self):

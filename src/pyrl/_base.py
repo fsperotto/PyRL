@@ -29,7 +29,7 @@ from typing import Iterable, Callable, TypeVar, Generic, Tuple, List, Union
 import gymnasium as gym
 from gymnasium.spaces import Space, Discrete, MultiDiscrete
 from gymnasium.spaces.utils import flatdim, flatten_space
-
+import tensorflow as tf
 
 ###################################################################
 
@@ -152,10 +152,10 @@ class Agent():
         def last_reward(self):
            return self.r
         
-        self.budget = budget
+        # self.budget = budget
 
 
-    def reset(self, initial_observation, reset_knowledge=True):
+    def reset(self, initial_observation, reset_budget=True, reset_knowledge=True):
         """
         Reset $t, r, s, a$, and can also reset the learned knowledge.
 
@@ -189,7 +189,7 @@ class Agent():
         else:
             self.ruined = True
         
-        self.learning = learning
+        # self.learning = learning
 
         self.should_reset = False
 
@@ -478,7 +478,7 @@ class Sim():
     def __init__(self, agents, envs, episode_horizon=100, num_episodes=1, num_simulations=1,
                  simulation_started_callback=None, simulation_finished_callback=None, 
                  episode_started_callback=None, episode_finished_callback=None, 
-                 round_started_callback=None, round_finished_callback=None ):
+                 round_started_callback=None, round_finished_callback=None, rl_config='tf'):
         if isinstance(agents, Agent):
             self.agents = [agents]
         else:
@@ -486,7 +486,7 @@ class Sim():
         if isinstance(envs, Env) or isinstance(envs, EnvWrapper):
            self.envs   = [envs]
         else:  
-           self.envs   = envs
+           self.envs   = [envs]
            
         #self.logger = logger
         self.episode_horizon = episode_horizon
@@ -499,30 +499,35 @@ class Sim():
         self.simulation_started_callback = simulation_started_callback
         self.simulation_finished_callback = simulation_finished_callback
         # self.metrics = {"time": 0, "exploration": []}
-
+        
+        num_states = np.prod(self.envs[0].observation_space.nvec)
+        num_actions = self.envs[0].action_space.n
+        # print(num_states)
+        
         self.t = 0
         self.metrics = dict(
             time = 0,
-            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+            exploration = np.zeros((num_states, num_actions)),
             budget = np.zeros((self.episode_horizon,), dtype=int)
         )
 
         self.t = 0
         self.metrics = dict(
             time = 0,
-            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+            exploration = np.zeros((num_states, num_actions)),
             budget = np.zeros((self.episode_horizon,), dtype=int)
         )
 
         self.t = 0
         self.metrics = dict(
             time = 0,
-            exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+            exploration = np.zeros((num_states, num_actions)),
             budget = np.zeros((self.episode_horizon,), dtype=int)
         )
 
         self.t = 0
 
+        self.rl_config = rl_config
     def reset(self):
         pass
 
@@ -539,9 +544,11 @@ class Sim():
             for agent in self.agents:
 
                 for i in range(num_simulations):
-
-                    observation, info = env.reset()
+                    if self.rl_config == 'tf': 
+                        observation = env.reset()
+                    else: observation, info = env.reset()
                     # return observation
+                    # print(observation)
                     agent.reset(observation)
 
                     #simulation started event callback
@@ -550,7 +557,11 @@ class Sim():
 
                     for j in range(num_episodes):
 
-                        observation, info = env.reset()
+                        if self.rl_config == 'tf': observation = env.reset()
+                        else: observation, info = env.reset()
+                        
+                        # print('initial_obs = ', observation)
+                        
                         is_first_episode = (j==0)
                         agent.reset(observation, reset_knowledge=is_first_episode)
 
@@ -564,21 +575,43 @@ class Sim():
                             if self.round_started_callback is not None:
                                 self.round_started_callback(self, env, agent)
 
-                            action = agent.act()  # agent policy that uses the observation and info
+                            if self.rl_config == 'tf': action = agent.act(observation)
+                            else: action = agent.act()  # agent policy that uses the observation and info
+                                                            
+                            
                             env.recharge_mode = hasattr(agent, "recharge_mode") and agent.recharge_mode
-                            observation, reward, terminated, truncated, info = env.step(action)
+                            
+                            
+                            if self.rl_config == 'tf': 
+                                observation, terminated, reward = env.execute(action)
+                                truncated = False
+                                # print("Q shape=\n", agent.Q.shape)
+                                # print("Q-values=\n", agent.Q)
+                                # print(agent.observation_shape)
+                            else: observation, reward, terminated, truncated, info = env.step(action)
+                            
                             agent.observe(observation, reward, terminated, truncated)
                             agent.learn()
-
+                            # print(agent.Q)
+                            self.metrics["time"] = self.metrics["time"] + 1
+                            # state_action_index = tuple(np.concatenate( (agent.get_state(), agent.get_action()) ) )
+                            # state_action_index = tuple(agent.get_state_action())
+                            # state_action_index = (state_action_index[0], state_action_index[1], state_action_index[2].item())
+                            # print(state_action_index)
+                            # v = self.metrics["exploration"].item(state_action_index)
+                            # self.metrics["exploration"].itemset(state_action_index, v+1)
+                            
                             #round finished event callback
                             if self.round_finished_callback is not None:
                                 try:
                                     self.round_finished_callback(env, agent)
                                 except Exception as e:
-                                    print(str(e))
+                                    # print(str(e))
+                                    pass
 
                             if terminated or truncated:
                                 # self.metrics["time"] = t
+                                
                                 break
                                 #observation, info = env.reset()
 

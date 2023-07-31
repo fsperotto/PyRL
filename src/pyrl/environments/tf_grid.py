@@ -1,40 +1,26 @@
-from typing import Tuple, List, Union, Callable
-
+from tensorforce.environments import Environment
 import numpy as np
 import gymnasium as gym
 import pygame as pg
+from typing import Tuple, List, Union, Callable
 
-#from gymnasium import error, spaces, utils
-#from gymnasium.utils import seeding
-
-from pyrl import Env
-
-#class CustomEnv(gym.Env):
-#    metadata = {'render.modes': ['human']}
-#    def __init__(self):
-#        ...
-#    def step(self, action):
-#        ...
-#    def reset(self):
-#        ...
-#    def render(self, mode='human'):
-#        ...
-#    def close(self):
-#        ...
-
+class TFGridEnv(Environment):
+    metadata = {"render_modes": ["human", "rgb_array", "external"], "render_fps": 60}
     
-class GridEnv(Env):
-
-    metadata = {"render_modes": ["human", "rgb_array", "external"], "render_fps": 90}
-
     def __init__(self, render_mode: str=None, 
                  size: Union[None, int, Tuple[int, int]]=None,
                  num_rows=None, num_cols=None,
+                 terminate=False,
                  reward_matrix=None,
                  reward_targets=None,
                  default_reward:float=0.0,
                  reward_mode="s'",  # "sas'" , "as'" , "sa", "a" , "s'",
                  random=False) -> None:
+        
+        super().__init__()
+        
+        self.render_mode = render_mode
+        self.interrupted = False
         
         #define grid size from parameters
         if (num_rows is not None or num_cols is not None):
@@ -62,10 +48,12 @@ class GridEnv(Env):
             self.num_rows = self.size[1]
         
         state_space = gym.spaces.MultiDiscrete((self.num_rows, self.num_cols))
-
+        self.observation_space = state_space
+        
         self.num_actions = 4
         action_space = gym.spaces.Discrete(self.num_actions)
-
+        self.action_space = action_space
+        
         self._action_to_direction = {
             0: np.array([1, 0]),  #right
             1: np.array([0, 1]),  #down
@@ -97,21 +85,30 @@ class GridEnv(Env):
 
         self._agent_location = np.array([0, 0])
         
-        super().__init__(state_space=state_space, action_space=action_space, render_mode=render_mode)
-        
+        self.terminate = terminate
+        self.window = None
+        self.clock = None 
 
-    def _get_obs(self):
-        #return int(self._agent_location[0] * self.num_rows + self._agent_location[1])
+    def states(self):
+        return dict(type='int', shape=(2,), num_values=(self.num_rows * self.num_cols))
+
+    def actions(self):
+        return dict(type='int', num_values=self.action_space.n)
+
+    # Optional: should only be defined if environment has a natural fixed
+    # maximum episode length; otherwise specify maximum number of training
+    # timesteps via Environment.create(..., max_episode_timesteps=???)
+    def max_episode_timesteps(self):
+        return super().max_episode_timesteps()
+    
+    def _get_obs(self) -> int:
         return self._agent_location
 
     def _get_info(self) -> dict:
         return dict()
 
-
-    def reset(self, seed=None, options=None):
-
-        super().reset(seed=seed)
-
+    def reset(self):
+        self.t = 0
         if self.num_rows == self.num_cols:
             self._agent_location = np.array([0, 0])
         else:
@@ -120,21 +117,18 @@ class GridEnv(Env):
         observation = self._get_obs()
         info = self._get_info()
 
-        #self.render()
         if self.render_mode is not None:
             if self._render_frame is not None:
                self._render_frame()
 
-        return observation, info
-
-
-   
-    def step(self, action):
-
-        super().step(action)
-
-        #old_agent_location = self._get_obs()
-        direction = self._action_to_direction[action]
+        return observation
+    
+    def execute(self, actions):
+        
+        done = False
+        self.t = self.t + 1
+        
+        direction = self._action_to_direction[actions]
         self._agent_location = np.clip(
             self._agent_location + direction, [0, 0], [self.num_cols - 1 , self.num_rows - 1]
         )
@@ -145,30 +139,98 @@ class GridEnv(Env):
             self._render_frame()
 
         reward = self.reward_matrix.item(tuple(self._agent_location))
+        
+        if self.terminate and reward == self.reward_targets.items()[0][0]:
+            done = True
 
-        return observation, reward, False, self.truncated, info
-
+        return observation, done, reward
+    
     def render(self):
         if self.render_mode is not None:
             if self._render_frame is not None:
                return self._render_frame()
+
+    def _render_frame(self):
+        if self.window is None and self.render_mode == "human":
+            pg.init()
+            pg.display.init()
+            self.window = pg.display.set_mode(
+                (self.window_size, self.window_size)
+            )
+        if self.clock is None and self.render_mode == "human":
+            self.clock = pg.time.Clock()
+
+        canvas = pg.Surface((self.window_size, self.window_size))
+        canvas.fill((255, 255, 255))
+        pix_square_size = (
+            self.window_size / self.size[0]
+        )
+
+        for label, target_location in self._target_locations.items():
+            pg.draw.rect(
+                canvas,
+                (255, 0 if label == "major" else 165, 0),
+                pg.Rect(
+                    pix_square_size * target_location,
+                    (pix_square_size, pix_square_size),
+                ),
+            )
+
+        pg.draw.circle(
+            canvas,
+            (255, 0, 0) if self.recharge_mode else (0, 0, 255),
+            (self._agent_location + 0.5) * pix_square_size,
+            pix_square_size / 3,
+        )
+
+        for x in range(self.size[1] + 1):
+            pg.draw.line(
+                canvas,
+                0,
+                (0, pix_square_size * x),
+                (self.size[0] * pix_square_size, pix_square_size * x),
+                width=3,
+            )
+
+        for x in range(self.size[0] + 1):
+            pg.draw.line(
+                canvas,
+                0,
+                (pix_square_size * x, 0),
+                (pix_square_size * x, self.size[1] * pix_square_size),
+                width=3,
+            )
+
+        if self.render_mode == "human":
+            self.window.blit(canvas, canvas.get_rect())
+            pg.event.pump()
+            pg.display.update()
+
+            self.clock.tick(self.metadata["render_fps"])
+        else:
+            return np.transpose(
+                np.array(pg.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
+            )
         
     def close(self) -> None:
-        #self.truncated = True
-        pass
-
-#    def get_target_states(self) -> List[Tuple[int, int]]:
-#        #return dict((label, self.location_to_state(location)) for label, location in self._target_locations.items())
-#        return self._target_locations
-#
-#    def location_to_state(self, location):
-#        return location[0] * self.num_rows + location[1]
-
-#########################################################################################################################
+        super().close()
+        if self.window is not None:
+            pg.display.quit()
+            pg.quit()
     
+    def get_target_states(self) -> List[Tuple[int, int]]:
+        return dict((label, self.location_to_state(location)) for label, location in self._target_locations.items())
+
+    def location_to_state(self, location):
+        return location[0] * self.size[0] + location[1]
+    
+    def show(self):
+       pass
+
+        
 class GridEnvRender():
 
-    def __init__(self, env, agent=None, fps=90, height=None, width=None, cell_size=None,
+    def __init__(self, env, agent=None, fps=40, height=None, width=None, cell_size=None,
                  interruption_callback:Callable=None):
 
         self.env = env       #reference to the environment
@@ -237,22 +299,6 @@ class GridEnvRender():
                     b = r
                 self.color_matrix[x, y] = [r, g, b]
 
-#    def reset(self):
-#        self._render_frame()
-
-#    def step(self, action):
-#        self._render_frame()
-
-#    def render(self):
-#        events = pg.event.get()
-#        for event in events:
-#            if event.type == pg.QUIT:
-#                self.env.truncated = True
-#                self.clock.tick(0)
-#                self.close()
-#        #if self.render_mode == "rgb_array":
-#        #    return self._render_frame()
-
     def refresh(self):
 
         if self.env.interrupted:
@@ -319,6 +365,7 @@ class GridEnvRender():
             if hasattr(self.agent, 'N') and self.agent.N is not None:
                for x in range(self.env.num_cols):
                    for y in range(self.env.num_rows):
+                    #    print((x,y))
                        n_min = 255 - 255//(self.agent.N[x, y].min()+1) 
                        n_max = 255 - 255//(self.agent.N[x, y].max()+1) 
                        pg.draw.rect(
@@ -365,7 +412,7 @@ class GridEnvRender():
                   for x in range(self.env.num_cols):
                       for y in range(self.env.num_rows):
                         #   q = self.agent.Q[x, y].max()
-                          q = self.agent.Q[x, y]
+                          q = self.agent.Q[y][x]
                           c = int(255 * (q - min_q) / (max_q - min_q))
                           pg.draw.rect(
                               canvas,
@@ -375,8 +422,7 @@ class GridEnvRender():
                                   (self.cell_size, self.cell_size),
                               )
                           )
-                       
-            
+                          
             #draw horizontal lines
             for y in range(self.env.num_rows + 1):
                 pg.draw.line(
