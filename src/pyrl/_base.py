@@ -23,18 +23,12 @@ __status__ = "Development"
 
 import sys
 import numpy as np
-#from abc import ABC, abstractmethod  #ABC is abstract base class
-#from collections.abc import Iterable
-from typing import Iterable, Callable, TypeVar, Generic, Tuple, List, Union
-
+from typing import Iterable, Callable, List, Union
 from itertools import product
-
 import gymnasium as gym
 from gymnasium.spaces import Space, Discrete, MultiDiscrete, Box
 from gymnasium.spaces.utils import flatdim, flatten_space
-
 import pygame as pg
-
 
 ###################################################################
 
@@ -66,6 +60,7 @@ def pyrl_space(space_or_dimensions:Union[int, Iterable[int], Space]) -> (Space, 
     num_comb = None
     shape=None
 
+    # print("space.nvec =", space.nvec)
     if isinstance(space, Discrete):
         shape = (space.n,)
         num_vars = 1
@@ -74,7 +69,6 @@ def pyrl_space(space_or_dimensions:Union[int, Iterable[int], Space]) -> (Space, 
         shape = tuple(space.nvec[::-1])
         num_vars = space.nvec.size
         num_comb = np.prod(space.nvec)
-        #num_comb = flatdim(flatten_space(space))
     elif isinstance(space, Box):
         shape = tuple(np.zeros(space.shape, dtype=int)) 
         num_vars = flatdim(space)
@@ -166,7 +160,6 @@ class Agent():
         #last received reward
         self.r = None
         
-
         self.learning = None
 
         self.terminated = None
@@ -175,7 +168,6 @@ class Agent():
         
         self.should_reset = True
         
-
     #--------------------------------------------------------------    
     @property
     def time_step(self):
@@ -431,150 +423,6 @@ class EnvWrapper(gym.Wrapper):
     def show(self):
        pass
 
-
-###################################################################
-
-    # metadata = {"render_modes": []}
-    # render_mode = None
-    # reward_range = (-float("inf"), float("inf"))
-    # spec = None
-    #
-    # action_space
-    # observation_space
-    #
-    # _np_random = None
-    #
-    # def step(self, action) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
-    #
-    # def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[ObsType, dict[str, Any]]:
-    #     """Resets the environment to an initial internal state, returning an initial observation and info.
-
-    #     This method generates a new starting state often with some randomness to ensure that the agent explores the
-    #     state space and learns a generalised policy about the environment. This randomness can be controlled
-    #     with the ``seed`` parameter otherwise if the environment already has a random number generator and
-    #     :meth:`reset` is called with ``seed=None``, the RNG is not reset.
-
-    #     Therefore, :meth:`reset` should (in the typical use case) be called with a seed right after initialization and then never again.
-
-    #     For Custom environments, the first line of :meth:`reset` should be ``super().reset(seed=seed)`` which implements
-    #     the seeding correctly.
-
-    #     .. versionchanged:: v0.25
-
-    #         The ``return_info`` parameter was removed and now info is expected to be returned.
-
-    #     Args:
-    #         seed (optional int): The seed that is used to initialize the environment's PRNG (`np_random`).
-    #             If the environment does not already have a PRNG and ``seed=None`` (the default option) is passed,
-    #             a seed will be chosen from some source of entropy (e.g. timestamp or /dev/urandom).
-    #             However, if the environment already has a PRNG and ``seed=None`` is passed, the PRNG will *not* be reset.
-    #             If you pass an integer, the PRNG will be reset even if it already exists.
-    #             Usually, you want to pass an integer *right after the environment has been initialized and then never again*.
-    #             Please refer to the minimal example above to see this paradigm in action.
-    #         options (optional dict): Additional information to specify how the environment is reset (optional,
-    #             depending on the specific environment)
-
-    #     Returns:
-    #         observation (ObsType): Observation of the initial state. This will be an element of :attr:`observation_space`
-    #             (typically a numpy array) and is analogous to the observation returned by :meth:`step`.
-    #         info (dictionary):  This dictionary contains auxiliary information complementing ``observation``. It should be analogous to
-    #             the ``info`` returned by :meth:`step`.
-    #     """
-    #     # Initialize the RNG if the seed is manually passed
-    #     if seed is not None:
-    #         self._np_random, seed = seeding.np_random(seed)
-
-    # def render(self) -> RenderFrame | list[RenderFrame] | None:
-    #     """Compute the render frames as specified by :attr:`render_mode` during the initialization of the environment.
-
-    #     The environment's :attr:`metadata` render modes (`env.metadata["render_modes"]`) should contain the possible
-    #     ways to implement the render modes. In addition, list versions for most render modes is achieved through
-    #     `gymnasium.make` which automatically applies a wrapper to collect rendered frames.
-
-    #     Note:
-    #         As the :attr:`render_mode` is known during ``__init__``, the objects used to render the environment state
-    #         should be initialised in ``__init__``.
-
-    #     By convention, if the :attr:`render_mode` is:
-
-    #     - None (default): no render is computed.
-    #     - "human": The environment is continuously rendered in the current display or terminal, usually for human consumption.
-    #       This rendering should occur during :meth:`step` and :meth:`render` doesn't need to be called. Returns ``None``.
-    #     - "rgb_array": Return a single frame representing the current state of the environment.
-    #       A frame is a ``np.ndarray`` with shape ``(x, y, 3)`` representing RGB values for an x-by-y pixel image.
-    #     - "ansi": Return a strings (``str``) or ``StringIO.StringIO`` containing a terminal-style text representation
-    #       for each time step. The text can include newlines and ANSI escape sequences (e.g. for colors).
-    #     - "rgb_array_list" and "ansi_list": List based version of render modes are possible (except Human) through the
-    #       wrapper, :py:class:`gymnasium.wrappers.RenderCollection` that is automatically applied during ``gymnasium.make(..., render_mode="rgb_array_list")``.
-    #       The frames collected are popped after :meth:`render` is called or :meth:`reset`.
-
-    #     Note:
-    #         Make sure that your class's :attr:`metadata` ``"render_modes"`` key includes the list of supported modes.
-
-    #     .. versionchanged:: 0.25.0
-
-    #         The render function was changed to no longer accept parameters, rather these parameters should be specified
-    #         in the environment initialised, i.e., ``gymnasium.make("CartPole-v1", render_mode="human")``
-    #     """
-    #     raise NotImplementedError
-
-    # def close(self):
-    #     """After the user has finished using the environment, close contains the code necessary to "clean up" the environment.
-
-    #     This is critical for closing rendering windows, database or HTTP connections.
-    #     Calling ``close`` on an already closed environment has no effect and won't raise an error.
-    #     """
-    #     pass
-
-    # @property
-    # def unwrapped(self) -> Env[ObsType, ActType]:
-    #     """Returns the base non-wrapped environment.
-
-    #     Returns:
-    #         Env: The base non-wrapped :class:`gymnasium.Env` instance
-    #     """
-    #     return self
-
-    # @property
-    # def np_random(self) -> np.random.Generator:
-    #     """Returns the environment's internal :attr:`_np_random` that if not set will initialise with a random seed.
-
-    #     Returns:
-    #         Instances of `np.random.Generator`
-    #     """
-    #     if self._np_random is None:
-    #         self._np_random, _ = seeding.np_random()
-    #     return self._np_random
-
-    # @np_random.setter
-    # def np_random(self, value: np.random.Generator):
-    #     self._np_random = value
-
-    # def __str__(self):
-    #     """Returns a string of the environment with :attr:`spec` id's if :attr:`spec.
-
-    #     Returns:
-    #         A string identifying the environment
-    #     """
-    #     if self.spec is None:
-    #         return f"<{type(self).__name__} instance>"
-    #     else:
-    #         return f"<{type(self).__name__}<{self.spec.id}>>"
-
-    # def __enter__(self):
-    #     """Support with-statement for the environment."""
-    #     return self
-
-    # def __exit__(self, *args: Any):
-    #     """Support with-statement for the environment and closes the environment."""
-    #     self.close()
-    #     # propagate exception
-    #     return False
-
-    # def get_wrapper_attr(self, name: str) -> Any:
-    #     """Gets the attribute `name` from the environment."""
-    #     return getattr(self, name)
-
 class Env(gym.Env):
 
     """
@@ -633,7 +481,8 @@ class Env(gym.Env):
         
         #time
         self.t = None
-        
+        # print("state_space.nvec =", state_space.nvec)
+        # state_space.nvec = state_space.nvec[::-1]
         #states
         self.state_space, self.state_shape, self.num_state_var, self.num_state_comb = pyrl_space(state_space)
         
@@ -876,8 +725,8 @@ class PyGameGUI(GUI):
 
     #--------------------------------------------------------------    
     def __init__(self, sim,
-                 height=800, width=800,
-                 fps=40,
+                 height=400, width=400,
+                 fps=80,
                  batch_run=10000,
                  on_close_listeners:Iterable[Callable]=[],
                  close_on_finish=True):
@@ -1113,7 +962,7 @@ class PyGameRenderer(Renderer):
 
     #--------------------------------------------------------------    
     def __init__(self, env=None, agent=None, 
-                 height=800, width=800,
+                 height=400, width=400,
                  on_close_listeners:Callable=None):
 
         super().__init__(env, agent) 

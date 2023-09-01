@@ -9,3 +9,4 @@ gymnasium
 pygame
 pymdptoolbox
 tensorforce
+stable-baselines3
