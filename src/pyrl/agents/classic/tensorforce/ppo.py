@@ -59,7 +59,7 @@ class PPOAgent(Agent):
                         **kwargs
                         )
                     
-        
+                
         self.episode_terminal = False
         self.initial_budget = initial_budget
         self.store_N = store_N

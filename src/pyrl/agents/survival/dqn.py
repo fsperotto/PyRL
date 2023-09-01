@@ -196,12 +196,12 @@ class SurvivalDQNAgent(Agent):
         self.optimizer.step()
         
         # K-learning table update
-        index_sa = self.get_state(self.s) + self.get_action()
-        index_next_s = self.get_state()
-        K_sa = self.K[index_sa]
-        K_next_s = self.K[index_next_s]
-        new_k = (1 - 0.005) * K_sa + 0.005 * (self.r + self.gamma * K_next_s.max())
-        self.K[index_sa] = new_k
+        # index_sa = self.get_state(self.s) + self.get_action()
+        # index_next_s = self.get_state()
+        # K_sa = self.K[index_sa]
+        # K_next_s = self.K[index_next_s]
+        # new_k = (1 - 0.005) * K_sa + 0.005 * (self.r + self.gamma * K_next_s.max())
+        # self.K[index_sa] = new_k
         
         # if self.t > 3000:
         for x in range(self.observation_shape[0]):
