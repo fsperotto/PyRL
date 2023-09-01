@@ -1,4 +1,6 @@
 import gymnasium as gym
+import numpy as np
+import matplotlib.pyplot as plt
 
 from pyrl import Sim, Agent, EnvWrapper, System
 
@@ -13,8 +15,8 @@ def end_episode_callback(sim):
    
 #################################################
 
-horizon = 2
-num_episodes = 1
+horizon = 500
+num_episodes = 2
 
 #################################################
 

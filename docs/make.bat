@@ -1,6 +1,6 @@
 @ECHO OFF
 
-pushd %~dp0
+REM pushd %~dp0
 
 REM Command file for Sphinx documentation
 
@@ -35,7 +35,7 @@ echo Calling sphinx-apidoc...
 echo Calling sphinx-build...
 if "%1" == "" (
 	%SPHINXBUILD% -M clean %SOURCEDIR% %BUILDDIR%
-	%SPHINXBUILD% -M %MODE% %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+	%SPHINXBUILD% -M html %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 ) else (
 	%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 )
@@ -43,6 +43,6 @@ if "%1" == "" (
 
 :end
 
-popd
+REM popd
 
-pause
+REM pause

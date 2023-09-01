@@ -24,8 +24,15 @@ dependencies = [
 	'matplotlib',
 	'pandas',
 	'tqdm',
-	'SMPyBandits'
+	'ray',
+	'SMPyBandits',
+	'gymnasium',
+	'pygame',
+	'pymdptoolbox'
 ]
+
+[project.optional-dependencies]
+	tensorforce = ['tensorforce']
 
 [project.urls]
 "Homepage" = "https://github.com/fsperotto/pyrl"

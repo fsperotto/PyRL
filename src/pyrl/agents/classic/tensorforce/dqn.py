@@ -6,29 +6,34 @@ from pyrl import pyrl_space
 
 class DQNAgent(Agent):
     """
-        Deep Q-Network Agent.
+        Tensorforce Deep Q-Network Agent.
     """
     
-    def __init__(self, environment, memory, batch_size, initial_observation=None,
-                initial_budget=1000, max_episode_timesteps=None, network='auto', update_frequency=0.25,
+    def __init__(self, env, observation_space, action_space, memory, batch_size, initial_observation=None,
+                initial_budget=1000, store_N=True, max_episode_timesteps=None, network='auto', update_frequency=0.25,
                 start_updating=None, learning_rate=0.001, huber_loss=None, horizon=1,
                 discount=0.99, reward_processing=None, return_processing=None,
                 predict_terminal_values=False, target_update_weight=1.0, target_sync_frequency=1,
-                state_preprocessing='linear_normalization', exploration=0.5, variable_noise=0.0,
+                state_preprocessing='linear_normalization', exploration_rate=0.5, variable_noise=0.0,
                 l2_regularization=0.0, entropy_regularization=0.0, parallel_interactions=1,
                 config=None, saver=None, summarizer=None,
                 tracking=None, recorder=None, **kwargs 
                  ):
         
-        self.exploration= exploration
+        #observations (what the agent perceives from the environment state)
+        self.observation_space, self.observation_shape, self.num_obs_var, self.num_obs_comb = pyrl_space(observation_space)        
+        #actions
+        self.action_space, self.action_shape, self.num_act_var, self.num_act_comb = pyrl_space(action_space)
+        
+        self.exploration_rate= exploration_rate
         self.agent = TFAgent.create(
                 agent='dqn',
-                environment=environment,
+                environment=env,
                 memory=memory,
                 network=network,
                 batch_size=batch_size,
                 max_episode_timesteps=max_episode_timesteps,
-                exploration=self.exploration,
+                exploration=self.exploration_rate,
                 update_frequency=update_frequency,
                 start_updating=start_updating,
                 learning_rate=learning_rate,
@@ -51,50 +56,45 @@ class DQNAgent(Agent):
                 tracking=tracking,
                 recorder=recorder,
             )
-        self.environment = environment
+
         self.s = initial_observation
         self.initial_budget = initial_budget
         self.b = self.initial_budget
-        
-        #observations (what the agent perceives from the environment state)
-        self.observation_space, self.observation_shape, self.num_obs_var, self.num_obs_comb = pyrl_space(self.environment.observation_space)
-        #actions
-        self.action_space, self.action_shape, self.num_act_var, self.num_act_comb = pyrl_space(self.environment.action_space)
-        
+                
         self.initial_Q_value = 0
+        self.store_N = store_N
+        self.truncated = None
         
-    def reset(self, s, reset_knowledge=True):
+    def reset(self, s, reset_knowledge=True, reset_budget=True, learning=True):
         self.t = 0 #time, or number of elapsed rounds 
         self.s = s  if isinstance(s, Iterable)  else  [s] #memory of the current state and last received reward
         self.r = 0.0   
         self.b = self.initial_budget
-        self.a = self.environment.action_space.sample() #next chosen action
-        self.N = np.zeros([self.environment.num_cols, self.environment.num_rows])
-        self.N[self.s[0], self.s[1]] += 1
+        self.a = self.action_space.sample() #next chosen action
+
         if reset_knowledge:
             self.agent.reset()
-        self.Q = np.full((self.environment.num_cols, self.environment.num_rows), self.initial_Q_value, dtype=float)
-        self.Q[self.s[1], self.s[0]] = self.agent.tracked_tensors()['agent/policy/action-values'].max()
+            self.Q = np.random.sample(self.observation_shape + self.action_shape)
+            if self.store_N:
+                self.N = np.zeros(self.observation_shape + self.action_shape, dtype=int)
         
-        return self.a
-        
-    def act(self, states):
-        self.a = self.agent.act(states)
+    def choose_action(self):
+        states = self.s
+        self.a = self.agent.act(states=states)
         
         return self.a
 
-    def observe(self, s, r, terminated=False, truncated=False):
+    def observe(self, s, r, terminal=False, truncated=False):
         """
             Memorize the observed state and received reward.
         """
         self.s = s
         self.r = r
-        if self.r != -1: self.r = self.r * 1000
+        self.truncated = truncated
         self.t += 1
         self.b += r
-        self.N[self.s[0], self.s[1]] += 1      
-        self.agent.observe(self.r, terminal=terminated)
-        self.Q[self.s[1], self.s[0]] = self.agent.tracked_tensors()['agent/policy/action-values'].max()
+        self.agent.observe(self.r, terminal=terminal)
+        self.N[self.s[0], self.s[1]] += 1
         
     def learn(self):
         pass

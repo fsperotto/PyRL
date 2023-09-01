@@ -21,15 +21,14 @@ __status__ = "Development"
 
 ################
 
+import sys
 import numpy as np
-#from abc import ABC, abstractmethod  #ABC is abstract base class
-#from collections.abc import Iterable
-from typing import Iterable, Callable, TypeVar, Generic, Tuple, List, Union
-
+from typing import Iterable, Callable, List, Union
+from itertools import product
 import gymnasium as gym
-from gymnasium.spaces import Space, Discrete, MultiDiscrete
+from gymnasium.spaces import Space, Discrete, MultiDiscrete, Box
 from gymnasium.spaces.utils import flatdim, flatten_space
-import tensorflow as tf
+import pygame as pg
 
 ###################################################################
 
@@ -37,8 +36,9 @@ def pyrl_space(space_or_dimensions:Union[int, Iterable[int], Space]) -> (Space, 
     """
     Function to convert the representation of a state_space, an observation_space, or an action_space
 
-        Return:
-            space 
+        Returns:
+            space : MultiDiscrete (gymnasium space)
+            shape : tuple
             num_vars : int
                 number of variables that represent the space.
             num_comb : int
@@ -51,12 +51,16 @@ def pyrl_space(space_or_dimensions:Union[int, Iterable[int], Space]) -> (Space, 
         space = MultiDiscrete([space_or_dimensions])
     elif isinstance(space_or_dimensions, Iterable):
         space = MultiDiscrete(space_or_dimensions)
+    #elif isinstance(space_or_dimensions, Box):
+    #    space = flatten_space(space)
     #elif isinstance(space_or_dimensions, Discrete):
     #    space = MultiDiscrete([space_or_dimensions.n])
     
     num_vars = None
     num_comb = None
     shape=None
+
+    # print("space.nvec =", space.nvec)
     if isinstance(space, Discrete):
         shape = (space.n,)
         num_vars = 1
@@ -65,11 +69,18 @@ def pyrl_space(space_or_dimensions:Union[int, Iterable[int], Space]) -> (Space, 
         shape = tuple(space.nvec[::-1])
         num_vars = space.nvec.size
         num_comb = np.prod(space.nvec)
-        #num_comb = flatdim(flatten_space(space))
+    elif isinstance(space, Box):
+        shape = tuple(np.zeros(space.shape, dtype=int)) 
+        num_vars = flatdim(space)
+        num_comb = float('inf')
     
     return space, shape, num_vars, num_comb
             
-       
+###################################################################
+
+def ensure_tuple(v):
+    return tuple(v) if isinstance(v, Iterable) else (v,)   
+   
 ###################################################################
 
 
@@ -95,14 +106,16 @@ class Agent():
                 number of possible flat actions (all the different combinations of action variables values, i.e. joint actions)
             t : int
                 the current time-step or round during execution, $t \in \mathbb{N}$.
-            s : list
+            s : tuple
                 current state, from the last observation.
             r : float
                 last received reward.
     """
 
+    #--------------------------------------------------------------    
     def __init__(self, observation_space, action_space,
-                 default_action=None, initial_budget=None):
+                 default_action=None, initial_budget=None,
+                 name=None):
         """
         Agent Constructor. 
         The dimensions concerning observable states and actions must be informed.
@@ -121,41 +134,93 @@ class Agent():
         else:
             self.default_action = np.array(default_action)
 
+        if name is not None:
+           self.name = name
+        else:
+           if type(self) == Agent:
+              if self.default_action is None:
+                 self.name = "Random Agent"
+              else:
+                 self.name = "Constant Agent"
+           else:
+                 self.name = "Custom Agent"
+              
+
         self.initial_budget = initial_budget
-        
+
         #time
         self.t = None
-        
-        @property
-        def time(self):
-           return self.t
-        
-        @property
-        def time_step(self):
-           return self.t
 
         #current state
         self.s = None
         
-        @property
-        def state(self):
-           return self.s
-        
-        @property
-        def current_state(self):
-           return self.s
+        #next chosen action
+        self.a = None
 
         #last received reward
         self.r = None
         
-        @property
-        def last_reward(self):
-           return self.r
+        self.learning = None
+
+        self.terminated = None
+        self.truncated = None
+        self.ruined = None
         
-        # self.budget = budget
+        self.should_reset = True
+        
+    #--------------------------------------------------------------    
+    @property
+    def time_step(self):
+      return self.t
 
+    @property
+    def current_round(self):
+      return self.t
 
-    def reset(self, initial_observation, reset_budget=True, reset_knowledge=True):
+    @property
+    def state(self):
+      return self.s
+   
+    @property
+    def current_state(self):
+      return self.s
+
+    @property
+    def last_reward(self):
+      return self.r
+   
+    @property
+    def reward(self):
+      return self.r
+
+    @property
+    def action(self):
+      return self.a
+   
+    @property
+    def chosen_action(self):
+      return self.a
+
+    @property
+    def budget(self):
+      return self.b
+   
+    @property
+    def current_budget(self):
+      return self.b
+
+    #--------------------------------------------------------------    
+
+    @property
+    def action_iterator(self):
+       return product( *map(range, self.action_shape) )
+
+    @property
+    def observation_iterator(self):
+       return product( *map(range, self.observation_shape) )
+
+    #--------------------------------------------------------------    
+    def reset(self, initial_observation, reset_knowledge=True, reset_budget=True, learning=True):
         """
         Reset $t, r, s, a$, and can also reset the learned knowledge.
 
@@ -172,10 +237,9 @@ class Agent():
         
         #memory of the current state 
         self.s = initial_observation 
-        ##memory of the last received reward
-        #self.r = 0.0
-        ##next chosen action
-        #self.choose_action()
+        
+        self.r = None
+        self.a = None
             
         #current budget
         if reset_budget:
@@ -189,11 +253,12 @@ class Agent():
         else:
             self.ruined = True
         
-        # self.learning = learning
+        self.learning = learning
 
         self.should_reset = False
 
 
+    #--------------------------------------------------------------    
     def choose_action(self):
         """
         Choose an action to execute, and return it.
@@ -216,7 +281,9 @@ class Agent():
         return self.a
 
 
-
+    act = choose_action
+    
+    #--------------------------------------------------------------    
     def observe(self, s, r, terminated, truncated):
 
         #if the agent was not reseted after initialization, then reset
@@ -231,28 +298,36 @@ class Agent():
 
         self.t = self.t + 1
 
-        if self.budget is not None:
-            self.budget = self.budget + r
+        if self.b is not None:
+            self.b = self.b + r
 
+    #--------------------------------------------------------------    
     def learn(self):
         pass
 
+
+    #--------------------------------------------------------------    
+    def observe_and_learn(self, s, r, terminated, truncated):
+       
+        self.observe(s, r, terminated, truncated)
+        self.learn()
+
+
+    #--------------------------------------------------------------    
     def get_state(self, s=None):
         if s is None:
            s = self.s
-        if isinstance(s, Iterable):
-            return tuple(s)
-        else:
-            return (s,)
+        return ensure_tuple(s)
+
          
+    #--------------------------------------------------------------    
     def get_action(self, a=None):
         if a is None:
            a = self.a
-        if isinstance(a, Iterable):
-            return tuple(a)
-        else:
-            return (a,)
+        return ensure_tuple(a)
 
+
+    #--------------------------------------------------------------    
     def get_state_action(self):
         return self.get_state() + self.get_action()
          
@@ -261,15 +336,70 @@ class Agent():
 
 class EnvWrapper(gym.Wrapper):
     
-    def __init__(self, env):
+    #--------------------------------------------------------------    
+    def __init__(self, env, name="Environment"):
+        
         super().__init__(env)
+       
         self.env = env
-        self.env.state_space = self.env.observation_space
-        self.env.t = None
-        self.env.initial_state = None
-        self.env.ready = False
-        self.env.interrupted = False
+        
+        #self.env.name = name
+        if not hasattr(self, 'name') or self.name is None:
+           self.name = name
+       
+        #flag : ready to execute
+        #self.env.ready = False
+        if not hasattr(self, 'ready') or self.ready is None:
+           self.ready = False
+        
+        #time
+        #self.env.t = None
+        if not hasattr(self, 't') or self.t is None:
+           self.t = 0
 
+        #self.env.interrupted = False
+        if not hasattr(self, 'interrupted') or self.interrupted is None:
+           self.interrupted = False
+
+        #actions
+        self.action_space, self.action_shape, self.num_act_var, self.num_act_comb = pyrl_space(self.action_space)
+         
+        #states
+        if hasattr(self, 'state_space') and self.state_space is not None:
+           self.state_space, self.state_shape, self.num_state_var, self.num_state_comb = pyrl_space(self.state_space)
+
+        #observations (what the agent perceives from the environment state)
+        if hasattr(self, 'observation_space') and self.observation_space is not None:
+            self.observation_space, self.observation_shape, self.num_obs_var, self.num_obs_comb = pyrl_space(self.observation_space)
+
+        #states
+        if not hasattr(self, 'state_space') or self.state_space is None:
+            self.state_space, self.state_shape, self.num_state_var, self.num_state_comb = self.observation_space, self.observation_shape, self.num_obs_var, self.num_obs_comb
+
+        #observations (what the agent perceives from the environment state)
+        if not hasattr(self, 'observation_space') or self.observation_space is None:
+            self.observation_space, self.observation_shape, self.num_obs_var, self.num_obs_comb = self.state_space, self.state_shape, self.num_state_var, self.num_state_comb
+         
+        if not hasattr(self, 'initial_state') or self.initial_state is None:
+            self.initial_state = None
+        else:
+            self.initial_state = ensure_tuple(self.initial_state)
+            
+
+    #--------------------------------------------------------------    
+    @property
+    def state_iterator(self):
+       return product( *map(range, self.state_shape) )
+
+    @property
+    def action_iterator(self):
+       return product( *map(range, self.action_shape) )
+
+    @property
+    def observation_iterator(self):
+       return product( *map(range, self.observation_shape) )
+
+    #--------------------------------------------------------------    
     def reset(self, *, seed:int=None, initial_state=None, options:dict=None) -> tuple:
         
         self.env.t = 0
@@ -279,6 +409,7 @@ class EnvWrapper(gym.Wrapper):
         return self.env.reset(seed=seed, options=options)
         
         
+    #--------------------------------------------------------------    
     def step(self, action):
     
         if not self.env.ready:
@@ -288,32 +419,70 @@ class EnvWrapper(gym.Wrapper):
 
         return self.env.step(action)
      
+    #--------------------------------------------------------------    
     def show(self):
        pass
-
-
-###################################################################
-
 
 class Env(gym.Env):
 
     """
-    Environment Class
+    PyRL Environment Class
 
     It represents the system to be controlled by an agent.
-    """
+    
+    Inspired on the main Gymnasium class for implementing Reinforcement Learning Agents environments:
+
+    *The class encapsulates an environment with arbitrary behind-the-scenes dynamics through the :meth:`step` and :meth:`reset` functions.
+    An environment can be partially or fully observed by single agents.*
+    
+    The main API methods that users of this class need to know are:
+
+     - :meth:`step` - Updates an environment with actions returning the next agent observation, the reward for taking that actions,
+       if the environment has terminated or truncated due to the latest action and information from the environment about the step, i.e. metrics, debug info.
+     - :meth:`reset` - Resets the environment to an initial state, required before calling step.
+       Returns the first agent observation for an episode and information, i.e. metrics, debug info.
+
+     If using integrated environment rendering:
+
+     - :meth:`render` - Renders the environments to help visualise what the agent see, examples modes are "human", "rgb_array", "ansi" for text.
+     - :meth:`close` - Closes the environment, important when external software is used, i.e. pygame for rendering, databases
+    
+     Environments have additional attributes for users to understand the implementation
+
+     - :attr:`action_space` - The Space object corresponding to valid actions, all valid actions should be contained within the space.
+     - :attr:`state_space` - The Space object corresponding to the state of the environment.
+     - :attr:`observation_space` - The Space object corresponding to valid observations (the agent's perception on the state), all valid observations should be contained within the space.
+     - :attr:`reward_range` - A tuple corresponding to the minimum and maximum possible rewards for an agent over an episode.
+       The default reward range is set to :math:`(-\infty,+\infty)`.
+     - :attr:`spec` - An environment spec that contains the information used to initialize the environment from :meth:`gymnasium.make`
+     - :attr:`metadata` - The metadata of the environment, 
+     - :attr:`np_random` - The random number generator for the environment. This is automatically assigned during
+       ``super().reset(seed=seed)`` and when assessing ``self.np_random``.
+
+     Note:
+         To get reproducible sampling of actions, a seed can be set with ``env.action_space.seed(123)``.
+
+      Note:
+         Differently from Gym.Env, in PyRL it is prefereable to use external rendering.
+     """
+
     
     metadata = {}
 
+    #--------------------------------------------------------------    
     def __init__(self, state_space, action_space, observation_space=None,
-                 initial_state=None, render_mode:Union[str,None]=None):
+                 initial_state=None, render_mode:Union[str,None]=None,
+                 name="Environment"):
         
+        self.name = name
+       
         #flag : ready to execute
         self.ready = False
         
         #time
         self.t = None
-        
+        # print("state_space.nvec =", state_space.nvec)
+        # state_space.nvec = state_space.nvec[::-1]
         #states
         self.state_space, self.state_shape, self.num_state_var, self.num_state_comb = pyrl_space(state_space)
         
@@ -329,10 +498,12 @@ class Env(gym.Env):
         
         if initial_state is None:
             self.initial_state = None
-        elif isinstance(initial_state, int):
-            self.initial_state = np.array([initial_state])
         else:
-            self.initial_state = np.array(initial_state)
+            self.initial_state = ensure_tuple(initial_state)
+        #elif isinstance(initial_state, int):
+        #    self.initial_state = np.array([initial_state])
+        #else:
+        #    self.initial_state = np.array(initial_state)
 
             
         """
@@ -353,7 +524,20 @@ class Env(gym.Env):
          
         #self.reset()
 
+    #--------------------------------------------------------------    
+    @property
+    def state_iterator(self):
+       return product( *map(range, self.state_shape) )
 
+    @property
+    def action_iterator(self):
+       return product( *map(range, self.action_shape) )
+
+    @property
+    def observation_iterator(self):
+       return product( *map(range, self.observation_shape) )
+
+    #--------------------------------------------------------------    
     def reset(self, *, seed:int=None, initial_state=None, options:dict=None) -> tuple:
         
         # We need the following line to seed self.np_random
@@ -385,12 +569,43 @@ class Env(gym.Env):
         return observation, info
         
 
-    def step(self, action):
+    #--------------------------------------------------------------    
+    def step(self, action, interval=1):
+        """
+         Like Gym.Env:
+            
+         Run one timestep of the environment's dynamics using the agent actions.
+
+         When the end of an episode is reached (``terminated or truncated``), it is necessary to call :meth:`reset` to
+         reset this environment's state for the next episode.
+
+
+         Args:
+             action (ActType): an action provided by the agent to update the environment state.
+             interval: the elapsed time for this step, generally 1 for discrete time problems.
+
+         Returns:
+             observation (ObsType): An element of the environment's :attr:`observation_space` as the next observation due to the agent actions.
+                 An example is a numpy array containing the positions and velocities of the pole in CartPole.
+             reward (SupportsFloat): The reward as a result of taking the action.
+             terminated (bool): Whether the agent reaches the terminal state (as defined under the MDP of the task)
+                 which can be positive or negative. An example is reaching the goal state or moving into the lava from
+                 the Sutton and Barton, Gridworld. If true, the user needs to call :meth:`reset`.
+             truncated (bool): Whether the truncation condition outside the scope of the MDP is satisfied.
+                 Typically, this is a timelimit, but could also be used to indicate an agent physically going out of bounds.
+                 Can be used to end the episode prematurely before a terminal state is reached.
+                 If true, the user needs to call :meth:`reset`.
+             info (dict): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging).
+                 This might, for instance, contain: metrics that describe the agent's performance state, variables that are
+                 hidden from observations, or individual reward terms that are combined to produce the total reward.
+                 In OpenAI Gym <v26, it contains "TimeLimit.truncated" to distinguish truncation and termination,
+                 however this is deprecated in favour of returning terminated and truncated variables.
+        """
     
         if not self.ready:
             self.reset()
 
-        self.t += 1
+        self.t += interval
 
 
         #action effects
@@ -402,35 +617,43 @@ class Env(gym.Env):
 
         info = self._get_info()
 
-        if self.render_mode is not None:
-            if not self.interrupted:
-               self._render_frame()
+        #if self.render_mode is not None:
+        #    if not self.interrupted:
+        #       self._render_frame()
 
         return observation, self.r, self.terminated, self.truncated, info
 
         
+    #--------------------------------------------------------------    
     def get_state(self, s=None):
         if s is None:
            s = self.s
-        if isinstance(s, Iterable):
-            return tuple(s)
-        else:
-            return (s,)
+        return ensure_tuple(s)
+         
+         
+    #--------------------------------------------------------------    
+    def get_reward_matrix(self):
+       return None
+       
+    #--------------------------------------------------------------    
+    def get_transition_matrix(self):
+       return None
 
+
+    #--------------------------------------------------------------    
     def _get_info(self):
         """
         method for the auxiliary information (a dict) that is returned by step and reset
         """
         return {"time-step": self.t}     
 
+    #--------------------------------------------------------------    
     def _get_obs(self):
         """
         method for converting state to observation
         """
         return self.s
-     
-    def show(self):
-       pass
+
 
         
 
@@ -442,6 +665,7 @@ class System():
     Control System Class, with agent and environment
     """
     
+    #--------------------------------------------------------------    
     def __init__(self, env, agent, observation_function:Union[Callable,None]=None):
         self.env = env
         self.agent = agent
@@ -450,12 +674,14 @@ class System():
         else:
             self.observation_function = self._observation_function
         
+    #--------------------------------------------------------------    
     def reset(self):
         initial_state, info = self.env.reset()
         initial_observation = self.observation_function(initial_state)
         self.agent.reset(initial_observation)
         return initial_state, initial_observation, info
     
+    #--------------------------------------------------------------    
     def step(self):
         action = self.agent.choose_action()
         state, reward, terminated, truncated, info = self.env.step(action)
@@ -463,184 +689,621 @@ class System():
         self.agent.observe(observation, reward, terminated, truncated)
         return state, observation, action, reward, terminated, truncated, info
 
+    #--------------------------------------------------------------    
     def _observation_function(self, state):
         return state
         
 ###################################################################
 
+class GUI():
+
+    #--------------------------------------------------------------    
+    def __init__(self, sim):
+
+        self.sim = sim       #reference to the simulation
         
-class Sim():
+    #--------------------------------------------------------------    
+    def reset(self):
+        pass
+
+    #--------------------------------------------------------------    
+    def launch(self):
+        pass
+
+    #--------------------------------------------------------------    
+    def refresh(self):
+        pass
+                
+    #--------------------------------------------------------------    
+    def close(self):
+        pass
+
+
+###################################################################
+
+class PyGameGUI(GUI):
+
+    #--------------------------------------------------------------    
+    def __init__(self, sim,
+                 height=400, width=400,
+                 fps=80,
+                 batch_run=10000,
+                 on_close_listeners:Iterable[Callable]=[],
+                 close_on_finish=True):
+
+        super().__init__(sim) 
+        
+        self.height = height
+        self.width = width
+        
+        self.fps = fps
+        self.refresh_interval_ms = max(10, 1000 // self.fps)
+        
+        self.batch_run = batch_run
+        
+        self.close_on_finish = close_on_finish
+        
+        self.on_close_listeners = on_close_listeners
+        
+        self._is_closing = False
+        
+        pg.init()
+
+        self.CLOCKEVENT = pg.USEREVENT+1
+        #self.clock = pg.time.Clock()
+        
+        self.window = None
+        
+        #self.sim.add_listener('round_finished', self.on_clock)
+        
+    #--------------------------------------------------------------    
+    def reset(self):
+       
+        self._is_closing = False
+
+    #--------------------------------------------------------------    
+    def set_timer_state(self, state:bool):
+       
+        if state == True:
+           pg.time.set_timer(self.CLOCKEVENT, self.refresh_interval_ms)
+        else:
+           pg.time.set_timer(self.CLOCKEVENT, 0)
+
+    #--------------------------------------------------------------    
+    def launch(self, give_first_step=True, start_running=True):
+
+        pg.display.init()
+        self.window = pg.display.set_mode( (self.width, self.height) )
+        #pg.display.set_caption('Exp')        
+        #self.window.set_caption('Exp')
+        
+        if give_first_step:
+           self.sim.step()
+           self.refresh()
+        
+        if start_running:
+           self.set_timer_state(True)
+        
+        #RUNNING
+        try:
+
+           while not self._is_closing:
+              
+              event = pg.event.wait()
+              
+              self.process_event(event)
+              
+              if self.close_on_finish and self.sim.finished:
+                 self.close()
+
+        except KeyboardInterrupt:
+           self.close()
+           print("KeyboardInterrupt: simulation interrupted by the user.")
+
+        except:
+           self.close()
+           raise
+
+     
+    #--------------------------------------------------------------    
+    def refresh(self):
+        
+        #refresh
+        pg.display.update()
+                
+    #--------------------------------------------------------------    
+    def close(self):
+       
+        self._is_closing = True
+ 
+        if self.window is not None:
+
+            #CLOSING
+            for callback in self.on_close_listeners:
+               callback(self)
+               
+            pg.display.quit()
+            pg.quit()
+
+        if self.sim.env is not None:
+           self.sim.env.close()
+
+    #--------------------------------------------------------------    
+    def process_event(self, event):
+       
+         if (event.type == pg.QUIT):
+             self.close()
+   
+         elif event.type == pg.KEYDOWN:
+             self.on_keydown(event.key)
+             
+         elif event.type == self.CLOCKEVENT:
+             self.sim.step()
+             self.refresh()
+      
+    #--------------------------------------------------------------    
+    def on_keydown(self, key):
+       
+       #ESC = exit
+       if key == pg.K_ESCAPE:
+          self.close()
+          
+       #P = pause
+       elif key == pg.K_p:
+          self.set_timer_state(False)
+          
+       #R = run
+       elif key == pg.K_r:
+          self.set_timer_state(True)
+          
+       #S = step
+       elif key == pg.K_s:
+          self.sim.step()
+          self.refresh()
+            
+       #B = batch run
+       elif key == pg.K_b:
+          self.sim.run(self.batch_run)
+          self.refresh()
+
+       #E = episode run
+       elif key == pg.K_e:
+          self.sim.run('episode')
+          self.refresh()
+
+       #Q = simulation run
+       elif key == pg.K_q:
+          self.sim.run('simulation')
+          self.refresh()
+
+       #Z = repetition run
+       elif key == pg.K_z:
+          self.sim.run('repetition')
+          self.refresh()
+          
+    #--------------------------------------------------------------    
+    #def on_clock(self, *args, **kwargs):
+    #   self.refresh()
+    #   self.clock.tick(self.fps)
+
+    #--------------------------------------------------------------    
+    #def step(self):
+    #   self.sim.next_step()
+
+    #--------------------------------------------------------------    
+    # def process_events(self):
+
+    #     keys = [] 
+
+    #     events = pg.event.get()
+        
+    #     for event in events:
+
+    #         if event.type == pg.QUIT:
+    #             self._is_closing = True
+      
+    #         if event.type == pg.KEYDOWN:
+    #             keys = keys + [event.key]
+                
+    #     if len(keys) > 0:
+    #        self.on_keydown(keys)
+
+    #--------------------------------------------------------------    
+    # def refresh(self):
+
+    #     self.process_events()
+       
+    #     self.render()
+                   
+            
+            
+            
+            
+###################################################################
+
+class Renderer():
+
+    #--------------------------------------------------------------    
+    def __init__(self, env=None, agent=None):
+
+        self.env = env       #reference to the environment
+        self.agent = agent       #reference to the environment
+        
+        self.ready = (self.env is not None)
+
+    #--------------------------------------------------------------    
+    def reset(self, env=None, agent=None):
+
+        if env is not None:
+           self.env = env       #reference to the environment
+           
+        if agent is not None:
+           self.agent = agent       #reference to the environment
+        
+        self.ready = (self.env is not None)
+
+    #--------------------------------------------------------------    
+    def render(self):
+        pass
+     
+      
+    #--------------------------------------------------------------    
+    def refresh(self):
+        pass
+                
+    #--------------------------------------------------------------    
+    def close(self):
+        pass
+
+
+###################################################################
+
+class PyGameRenderer(Renderer):
+
+    #--------------------------------------------------------------    
+    def __init__(self, env=None, agent=None, 
+                 height=400, width=400,
+                 on_close_listeners:Callable=None):
+
+        super().__init__(env, agent) 
+        
+        self.height = height
+        self.width = width
+        
+        self.on_close_listeners = on_close_listeners
+        
+        self._is_closing = False
+        
+        pg.init()
+        pg.display.init()
+
+        self.window = pg.display.set_mode( (self.width, self.height) )
+        
+
+    #--------------------------------------------------------------    
+    def reset(self):
+       
+        self._is_closing = False
+
+
+    #--------------------------------------------------------------    
+    def render(self):
+
+        #refresh
+        pg.display.update()
+
+    #--------------------------------------------------------------    
+    def process_events(self):
+
+        keys = [] 
+
+        events = pg.event.get()
+        
+        for event in events:
+
+            if event.type == pg.QUIT:
+                self._is_closing = True
+      
+            if event.type == pg.KEYDOWN:
+                keys += event.key
+                
+        if len(keys) > 0:
+           self.on_keydown(keys)
+
+    #--------------------------------------------------------------    
+    def on_keydown(self, keys):
+       pass
+        
+      
+    #--------------------------------------------------------------    
+    def refresh(self):
+
+        if self._is_closing:
+            
+            if self.on_close_listeners is not None:
+               self.on_close_listeners()
+
+            self.close()
+
+        else:
+
+            self.process_events()
+
+            self.render()
+                   
+            
+    #--------------------------------------------------------------    
+    def close(self) -> None:
+       
+        if self.window is not None:
+            pg.display.quit()
+            pg.quit()
+
+         
+    #--------------------------------------------------------------    
+    def add_close_listener(self, listener:Callable):
+        self.on_close_listeners.append(listener)
+        
+        
+        
+###################################################################
+
+class EventBasedObject():
+
+    def __init__(self):
+        self._listeners = {}
+   
+    def add_listener(self, name:str, listeners:Union[Callable, List[Callable]]):
+        if isinstance(listeners, Callable):
+            listeners = [listeners]
+        if len(listeners) > 0:
+            if name in self._listeners.keys():
+                self._listeners[name] = self._listeners[name] + listeners
+            else:
+                self._listeners[name] = listeners
+         
+    def _evoke_listeners(self, name:str, *args, **kwargs):
+        if name in self._listeners.keys():
+            for callback in self._listeners[name]:
+                return_cancel = callback(self, *args, **kwargs)
+                if return_cancel is not None:
+                   break
+
+    def clear_listeners(self, name:str=None):
+        if name is not None:
+           if name in self._listeners.keys():
+              self._listeners.pop(name)
+        else:
+           self._listeners.clear()
+
+###################################################################
+
+
+class Sim(EventBasedObject):
     """
     Simulator Class
 
     """
 
-    def __init__(self, agents, envs, episode_horizon=100, num_episodes=1, num_simulations=1,
-                 simulation_started_callback=None, simulation_finished_callback=None, 
-                 episode_started_callback=None, episode_finished_callback=None, 
-                 round_started_callback=None, round_finished_callback=None, rl_config='tf'):
-        if isinstance(agents, Agent):
-            self.agents = [agents]
-        else:
-            self.agents = agents
-        if isinstance(envs, Env) or isinstance(envs, EnvWrapper):
-           self.envs   = [envs]
-        else:  
-           self.envs   = [envs]
-           
-        #self.logger = logger
+    #--------------------------------------------------------------    
+    def __init__(self, agents:Union[Agent, Iterable], env:Union[Env, EnvWrapper], 
+                 episode_horizon:int=100, num_episodes:int=1, num_repetitions:int=1,
+                 close_on_finish=True):
+                 #renderers=[]
+        
+        super().__init__()
+        
+        #self.envs = envs if isinstance(envs, Iterable) else [envs]
+        self.env = env 
+
+        self.agents = agents if isinstance(agents, Iterable) else [agents]
+        
         self.episode_horizon = episode_horizon
         self.num_episodes = num_episodes
-        self.num_simulations = num_simulations
-        self.round_started_callback = round_started_callback
-        self.round_finished_callback = round_finished_callback
-        self.episode_started_callback = episode_started_callback
-        self.episode_finished_callback = episode_finished_callback
-        self.simulation_started_callback = simulation_started_callback
-        self.simulation_finished_callback = simulation_finished_callback
+        self.num_repetitions = num_repetitions
+        
+        self.close_on_finish = close_on_finish
+        
+        self.reset()
         # self.metrics = {"time": 0, "exploration": []}
-        
-        num_states = np.prod(self.envs[0].observation_space.nvec)
-        num_actions = self.envs[0].action_space.n
-        # print(num_states)
-        
-        self.t = 0
-        self.metrics = dict(
-            time = 0,
-            exploration = np.zeros((num_states, num_actions)),
-            budget = np.zeros((self.episode_horizon,), dtype=int)
-        )
 
-        self.t = 0
-        self.metrics = dict(
-            time = 0,
-            exploration = np.zeros((num_states, num_actions)),
-            budget = np.zeros((self.episode_horizon,), dtype=int)
-        )
+        #self.metrics = dict(
+        #    time = 0,
+        #    exploration = np.zeros((self.envs[0].observation_space.n, self.envs[0].action_space.n)),
+        #    budget = np.zeros((self.episode_horizon,), dtype=int)
+        #)
 
-        self.t = 0
-        self.metrics = dict(
-            time = 0,
-            exploration = np.zeros((num_states, num_actions)),
-            budget = np.zeros((self.episode_horizon,), dtype=int)
-        )
-
-        self.t = 0
-
-        self.rl_config = rl_config
+    #--------------------------------------------------------------    
     def reset(self):
-        pass
 
-    def run(self, episode_horizon=None, num_episodes=None, num_simulations=None):
-    
-        episode_horizon = episode_horizon  if  episode_horizon is not None else self.episode_horizon
-        num_episodes = num_episodes  if  num_episodes is not None  else  self.num_episodes
-        num_simulations = num_simulations  if  num_simulations is not None   else  self.num_simulations
+        self.finished = False
 
-        for env in self.envs:
+        #self.env = None
+        #self.env_idx = -1
+
+        self.rep = -1
+
+        self.agent = None
+        self.agent_idx = -1
+
+        self.ep = -1
+
+        self.t = -1
+        
+        self.episode_finished = True
+        self.simulation_finished = True
+        self.repetition_finished = True
+        self.environment_finished = True
+
+
+    #--------------------------------------------------------------    
+    def step(self):
+       
+        #if self.ready and not self.finished:
+        if not self.finished:
            
-            env.show()
+            if self.episode_finished:
+               
+               if self.simulation_finished:
+                  
+                  if self.repetition_finished:
+
+                     #if self.environment_finished:
+                     #   
+                     #   #next_environment
+                     #   self.env_idx += 1
+                     #   self.env = self.envs[self.env_idx]
+                     #
+                     #   self.environment_finished = False
+                     #
+                     #   self.rep = -1
+                     #    
+                     #   #env started event callback
+                     #   self._evoke_listeners('environment_started')
+                        
+                     #next_repetition
+                     self.rep += 1
+
+                     self.repetition_finished = False
+
+                     self.agent_idx =-1
+                     self.agent = None
             
-            for agent in self.agents:
+                     #repetition started event callback
+                     self._evoke_listeners('repetition_started')
+                     
+                  #next_simulation
+                  self.agent_idx += 1
+                  self.agent = self.agents[self.agent_idx]
 
-                for i in range(num_simulations):
-                    if self.rl_config == 'tf': 
-                        observation = env.reset()
-                    else: observation, info = env.reset()
-                    # return observation
-                    # print(observation)
-                    agent.reset(observation)
-
-                    #simulation started event callback
-                    if self.simulation_started_callback is not None:
-                        self.simulation_started_callback(self, env, agent)
-
-                    for j in range(num_episodes):
-
-                        if self.rl_config == 'tf': observation = env.reset()
-                        else: observation, info = env.reset()
-                        
-                        # print('initial_obs = ', observation)
-                        
-                        is_first_episode = (j==0)
-                        agent.reset(observation, reset_knowledge=is_first_episode)
-
-                        #episode started event callback
-                        if self.episode_started_callback is not None:
-                            self.episode_started_callback(self, env, agent)
-
-                        for t in range(1, episode_horizon+1):
-
-                            #round started event callback
-                            if self.round_started_callback is not None:
-                                self.round_started_callback(self, env, agent)
-
-                            if self.rl_config == 'tf': action = agent.act(observation)
-                            else: action = agent.act()  # agent policy that uses the observation and info
-                                                            
-                            
-                            env.recharge_mode = hasattr(agent, "recharge_mode") and agent.recharge_mode
-                            
-                            
-                            if self.rl_config == 'tf': 
-                                observation, terminated, reward = env.execute(action)
-                                truncated = False
-                                # print("Q shape=\n", agent.Q.shape)
-                                # print("Q-values=\n", agent.Q)
-                                # print(agent.observation_shape)
-                            else: observation, reward, terminated, truncated, info = env.step(action)
-                            
-                            agent.observe(observation, reward, terminated, truncated)
-                            agent.learn()
-                            # print(agent.Q)
-                            self.metrics["time"] = self.metrics["time"] + 1
-                            # state_action_index = tuple(np.concatenate( (agent.get_state(), agent.get_action()) ) )
-                            # state_action_index = tuple(agent.get_state_action())
-                            # state_action_index = (state_action_index[0], state_action_index[1], state_action_index[2].item())
-                            # print(state_action_index)
-                            # v = self.metrics["exploration"].item(state_action_index)
-                            # self.metrics["exploration"].itemset(state_action_index, v+1)
-                            
-                            #round finished event callback
-                            if self.round_finished_callback is not None:
-                                try:
-                                    self.round_finished_callback(env, agent)
-                                except Exception as e:
-                                    # print(str(e))
-                                    pass
-
-                            if terminated or truncated:
-                                # self.metrics["time"] = t
-                                
-                                break
-                                #observation, info = env.reset()
-
-                            if agent.b is not None:
-                                if agent.b <= 0:
-                                    break
-                                 
-                            if env.interrupted:
-                                print("Simulation interrupted by the user.")
-                                break
-
-                        #episode finished callback
-                        if self.episode_finished_callback is not None:
-                            try:
-                                self.episode_finished_callback(env, agent)
-                            except Exception as e:
-                                print(str(e))
-
-                    if self.simulation_finished_callback is not None:
-                        self.simulation_finished_callback(self, env, agent)
-
-                    if env.interrupted:
-                        break
+                  self.simulation_finished = False
+            
+                  self.ep = -1
+            
+                  #simulation started event callback
+                  self._evoke_listeners('simulation_started')                  
+               
+               #next episode
+               self.t = 0
+   
+               self.ep += 1
+               self.episode_finished = False
                 
-                if env.interrupted:
-                    break
+               observation, info = self.env.reset()
+               is_first_episode = (self.ep==0)
+               self.agent.reset(observation, reset_knowledge=is_first_episode)
+   
+               #episode started event callback
+               self._evoke_listeners('episode_started')
 
-            env.close()
+            #episode is not finished, next round
+            else:               
+               
+               self.t += 1
+          
+               #round started event callback
+               self._evoke_listeners('round_started')
+  
+               action = self.agent.choose_action()  # agent policy that uses the observation and info
+               observation, reward, terminated, truncated, info = self.env.step(action)
+                      
+               self.agent.observe_and_learn(observation, reward, terminated, truncated)
 
-            if env.interrupted:
-                break
+               #round finished event callback
+               self._evoke_listeners('round_finished')
 
+               ruined = False
+               if self.agent.b is not None:
+                   if self.agent.b <= 0:
+                       ruined = True
+   
+               if (self.t >= self.episode_horizon):
+                  truncated = True
+                  
+               if terminated or truncated or ruined:
+                  
+                  self.episode_finished = True
+                  self._evoke_listeners('episode_finished')
+   
+                  if self.ep >= self.num_episodes-1:
+                
+                     self.simulation_finished = True
+                     self._evoke_listeners('simulation_finished')
+                     
+                     if self.agent_idx >= len(self.agents)-1:
+   
+                        self.repetition_finished = True
+                        self._evoke_listeners('repetition_finished')
+                        
+                        if self.rep >= self.num_repetitions-1:
+                        
+                           # self.environment_finished = True
+                           # self._evoke_listeners('environment_finished')
+                           # 
+                           # if self.env_idx >= len(self.envs)-1:
+              
+                           self.finished = True
+                           
+                           if self.close_on_finish:
+                              self.env.close()
+
+
+    #--------------------------------------------------------------    
+    def run(self, steps=None):
+       
+       if not self.finished:
+       
+          try:
+   
+             #run a precised number of steps                   
+             if isinstance(steps, int):
+
+                for i in range(steps):
+                   self.step()
+                   if self.finished:
+                      break
+                
+             elif steps == 'episode':   
+                self.step()
+                while not self.episode_finished:
+                   self.step()
+
+             elif steps == 'simulation':   
+                self.step()
+                while not self.simulation_finished:
+                   self.step()
+
+             elif steps == 'repetition':   
+                self.step()
+                while not self.repetition_finished:
+                   self.step()
+
+             #elif steps == 'environment':   
+             #   while not self.environment_finished:
+             #      self.step()
+
+             #run until the end
+             else:
+                
+                while not self.finished:
+                   self.step()
+             
+          
+          except KeyboardInterrupt:
+             self.close()
+             print("KeyboardInterrupt: simulation interrupted by the user.")
+             sys.exit()
+   
+          except:
+             self.close()
+             raise
+             
+          if self.close_on_finish:
+             self.close()
+
+
+    #--------------------------------------------------------------    
+    def close(self):
+       
+       if self.env is not None:
+          self.env.close()
