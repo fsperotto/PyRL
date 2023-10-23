@@ -155,7 +155,7 @@ class SurvivalDQNAgent(Agent):
         self.b += r
         self.replay_buffer.push(self.prev_s, self.a, self.r*self.reward_scale, self.s, terminated) # Store the transition in memory
 
-        index_sa = self.get_state(self.prev_s) + self.get_action()
+        index_sa = self.get_state_tpl(self.prev_s) + self.get_action_tpl()
 
         if self.store_N:
            self.N[index_sa] += 1
@@ -196,8 +196,8 @@ class SurvivalDQNAgent(Agent):
         self.optimizer.step()
         
         # K-learning table update
-        # index_sa = self.get_state(self.s) + self.get_action()
-        # index_next_s = self.get_state()
+        # index_sa = self.get_state_tpl(self.s) + self.get_action_tpl()
+        # index_next_s = self.get_state_tpl()
         # K_sa = self.K[index_sa]
         # K_next_s = self.K[index_next_s]
         # new_k = (1 - 0.005) * K_sa + 0.005 * (self.r + self.gamma * K_next_s.max())
@@ -249,8 +249,8 @@ class SurvivalDQNAgent(Agent):
         # # self.target_net.load_state_dict(target_net_state_dict)
         
         # # K-learning table update
-        # index_sa = self.get_state(self.s) + self.get_action()
-        # index_next_s = self.get_state()
+        # index_sa = self.get_state_tpl(self.s) + self.get_action_tpl()
+        # index_next_s = self.get_state_tpl()
         # K_sa = self.K[index_sa]
         # K_next_s = self.K[index_next_s]
         # new_k = (1 - 0.005) * K_sa + 0.005 * (self.r + self.gamma * K_next_s.max())

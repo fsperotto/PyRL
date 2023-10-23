@@ -122,7 +122,7 @@ class DQNAgent(Agent):
         self.t += 1
         self.b += r
         self.replay_buffer.push(self.prev_s, self.a, self.s, self.r, terminated) # Store the transition in memory
-        index_sa = self.get_state(self.prev_s) + self.get_action()
+        index_sa = self.get_state_tpl(self.prev_s) + self.get_action_tpl()
 
         if self.store_N:
            self.N[index_sa] += 1

@@ -1,0 +1,8 @@
+name: pyrl_dev
+channels:
+  - defaults
+dependencies:
+  - pip
+  - setuptools
+  - sphynx
+  

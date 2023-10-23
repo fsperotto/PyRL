@@ -30,5 +30,5 @@ setup(
     ],
     python_requires='>=3.7',
     #install_requires = requirements,
-    #tests_require = [],    
+    #tests_require = [],
 )

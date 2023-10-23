@@ -22,10 +22,19 @@ Subpackages
 Submodules
 ----------
 
-pyrl.\_base module
-------------------
+pyrl.agent module
+-----------------
 
-.. automodule:: pyrl._base
+.. automodule:: pyrl.agent
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+pyrl.env module
+---------------
+
+.. automodule:: pyrl.env
    :members:
    :undoc-members:
    :show-inheritance:
@@ -35,6 +44,51 @@ pyrl.gr module
 --------------
 
 .. automodule:: pyrl.gr
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+pyrl.gui module
+---------------
+
+.. automodule:: pyrl.gui
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+pyrl.renderer module
+--------------------
+
+.. automodule:: pyrl.renderer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+pyrl.sim module
+---------------
+
+.. automodule:: pyrl.sim
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+pyrl.space module
+-----------------
+
+.. automodule:: pyrl.space
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+pyrl.system module
+------------------
+
+.. automodule:: pyrl.system
    :members:
    :undoc-members:
    :show-inheritance:

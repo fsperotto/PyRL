@@ -13,5 +13,5 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   pyrl.agents.classic
+   pyrl.agents.standard
    pyrl.agents.survival

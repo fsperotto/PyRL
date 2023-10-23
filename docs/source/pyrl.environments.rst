@@ -55,10 +55,10 @@ pyrl.environments.survival module
    :show-inheritance:
    :private-members:
 
-pyrl.environments.tensorforce\_survival module
-----------------------------------------------
+pyrl.environments.tf\_grid module
+---------------------------------
 
-.. automodule:: pyrl.environments.tensorforce_survival
+.. automodule:: pyrl.environments.tf_grid
    :members:
    :undoc-members:
    :show-inheritance:

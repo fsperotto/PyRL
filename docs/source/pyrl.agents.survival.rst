@@ -7,6 +7,14 @@ pyrl.agents.survival package
    :show-inheritance:
    :private-members:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pyrl.agents.survival.tensorforce
+
 Submodules
 ----------
 
@@ -41,24 +49,6 @@ pyrl.agents.survival.qlearning module
 -------------------------------------
 
 .. automodule:: pyrl.agents.survival.qlearning
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :private-members:
-
-pyrl.agents.survival.tensorforce\_survival\_dqn module
-------------------------------------------------------
-
-.. automodule:: pyrl.agents.survival.tensorforce_survival_dqn
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :private-members:
-
-pyrl.agents.survival.tf\_a2c module
------------------------------------
-
-.. automodule:: pyrl.agents.survival.tf_a2c
    :members:
    :undoc-members:
    :show-inheritance:

@@ -12,7 +12,7 @@ authors = [
 ]
 description = "Safe and Survival Reinforcement Learning"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -26,13 +26,25 @@ dependencies = [
 	'tqdm',
 	'ray',
 	'SMPyBandits',
+	'gym',
 	'gymnasium',
 	'pygame',
 	'pymdptoolbox'
 ]
 
 [project.optional-dependencies]
-	tensorforce = ['tensorforce']
+    none = []
+	basic = []
+    simple = []
+	tested = ['swig', 'gymnasium[box2d]', 'gymnasium[atari,accept-rom-license]', 'gymnasium[all]', 'rich', 'torch', 'stable-baselines3']
+    gym_all = ['swig', 'gymnasium[box2d]', 'gymnasium[atari,accept-rom-license]', 'gymnasium[all]']
+	tensorflow = ['tensorflow-cpu']
+	pytorch = ['torch', 'torchvideo', 'torchaudio']
+	deep_cpu = ['tensorflow-cpu', 'torch', 'torchvideo', 'torchaudio']
+	tensorforce = ['tensorflow-cpu', 'tensorforce']
+	sb3 = ['rich', 'torch', 'torchvideo', 'torchaudio', 'stable-baselines3']
+	atari = ['gymnasium[atari,accept-rom-license]']
+	all = ['tensorflow-cpu', 'tensorforce', 'torch', 'torchvideo', 'torchaudio', 'stable-baselines3', 'swig', 'gymnasium[all]']
 
 [project.urls]
 "Homepage" = "https://github.com/fsperotto/pyrl"
@@ -40,7 +52,7 @@ dependencies = [
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["pyrl", "pyrl.mab", "pyrl.mdp", "pyrl.replay_buffer", "pyrl.environments", "pyrl.agents", "pyrl.agents.classic", "pyrl.agents.survival"]
+packages = ["pyrl", "pyrl.mab", "pyrl.mdp", "pyrl.replay_buffer", "pyrl.environments", "pyrl.agents", "pyrl.agents.survival"]
 
 #[tool.setuptools.packages.find]
 #where = ["src"]

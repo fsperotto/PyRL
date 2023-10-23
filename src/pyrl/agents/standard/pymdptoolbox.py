@@ -37,6 +37,6 @@ class PolicyIteration(PI, Agent):
 
 
     def choose_action(self):
-        self.a = self.policy(self.get_state())
+        self.a = self.policy(self.get_state_tpl())
         return self.a
 

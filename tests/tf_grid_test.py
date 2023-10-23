@@ -1,5 +1,5 @@
 import numpy as np
-from pyrl.agents.classic import DQNAgent as ClassicDQN
+from pyrl.agents import DQNAgent as ClassicDQN
 from pyrl import Sim
 from pyrl.environments.tf_grid import TFGridEnv, GridEnvRender
 from tensorforce.environments import Environment

@@ -1,13 +1,18 @@
 from typing import Iterable, Callable, TypeVar, Generic, Tuple, List, Union
 
+import math
+
 import numpy as np
 import gymnasium as gym
 import pygame as pg
+
 
 #from gymnasium import error, spaces, utils
 #from gymnasium.utils import seeding
 
 from pyrl import Env, PyGameRenderer, PyGameGUI
+
+from pyrl.space import ensure_tuple
 
 #class CustomEnv(gym.Env):
 #    metadata = {'render.modes': ['human']}
@@ -22,18 +27,40 @@ from pyrl import Env, PyGameRenderer, PyGameGUI
 #    def close(self):
 #        ...
 
-    
+   
 class GridEnv(Env):
 
     metadata = {"render_modes": ["human", "rgb_array", "external"], "render_fps": 90}
+
+    action_str = np.array([
+            'right',  # 0
+            'down',   # 1 
+            'left',   # 2
+            'up'])    # 3
+         
+         
+    action_idx = {
+            'right':0,
+            'down':1,
+            'left':2,
+            'up':3
+         }
+
+    action_to_direction = np.array([
+            [+1, 0],  #0: right
+            [0, +1],  #1: down
+            [-1, 0],  #2:left
+            [0, -1]]) #3:up
+
 
     def __init__(self, render_mode: str=None, 
                  size: Union[None, int, Tuple[int, int]]=None,
                  num_rows=None, num_cols=None,
                  reward_matrix=None,
-                 reward_targets=None,
-                 default_reward:float=0.0,
+                 reward_targets=None, default_reward:float=0.0, reward_spread:float=0.0,
                  reward_mode="s'",  # "sas'" , "as'" , "sa", "a" , "s'",
+                 initial_position=None,
+                 default_initial_budget=None,
                  random=False) -> None:
         
         #define grid size from parameters
@@ -61,21 +88,14 @@ class GridEnv(Env):
             self.num_cols = self.size[0]
             self.num_rows = self.size[1]
         
-        state_space = gym.spaces.MultiDiscrete((self.num_rows, self.num_cols))
+        state_space = gym.spaces.MultiDiscrete((self.num_cols, self.num_rows))
 
         self.num_actions = 4
         action_space = gym.spaces.Discrete(self.num_actions)
 
-        self._action_to_direction = {
-            0: np.array([1, 0]),  #right
-            1: np.array([0, 1]),  #down
-            2: np.array([-1, 0]), #left
-            3: np.array([0, -1]), #up
-        }
-
         self.reward_mode = reward_mode
         
-        self.default_reward = default_reward
+        self.default_reward = float(default_reward)
 
         if reward_matrix is not None:
             self.reward_matrix = np.array(reward_matrix)
@@ -86,18 +106,33 @@ class GridEnv(Env):
             if reward_targets is not None:
                 self.reward_matrix = np.full((self.num_cols, self.num_rows), self.default_reward)
                 self.reward_targets = reward_targets
-                for r, pos_list in reward_targets.items():
-                    for x, y in pos_list:
-                        self.reward_matrix[x, y] = r
+                if reward_spread == 0.0:
+                   #each target is exactly the value at the position
+                   for r, pos_list in reward_targets.items():
+                      for x, y in pos_list:
+                         self.reward_matrix[x, y] = r
+                else:
+                   #each target is a center of reward, spreading the value around
+                   for r, pos_list in reward_targets.items():
+                      for cx, cy in pos_list:
+                         for x in range(self.num_cols):  
+                            for y in range(self.num_rows):
+                               #d = math.dist((cx, cy), (x, y))
+                               d = abs(cx-x) + abs(cy-y)
+                               self.reward_matrix[x, y] += r * (reward_spread ** d)
+                   
+                   
             else:
                 self.reward_matrix = 2 * np.random.sample((self.num_cols, self.num_rows)) - 1
                 self.reward_targets = None
 
         self._render_frame = None
 
-        self._agent_location = np.array([0, 0])
+        if initial_position is None:
+           initial_position = [0,0]
+        self._agent_location = np.array(initial_position)
         
-        super().__init__(state_space=state_space, action_space=action_space, render_mode=render_mode)
+        super().__init__(state_space, action_space, render_mode=render_mode, default_initial_budget=default_initial_budget)
         
 
     def _get_obs(self):
@@ -107,18 +142,34 @@ class GridEnv(Env):
     def _get_info(self) -> dict:
         return dict()
 
-    def get_reward_matrix(self):
-       R = self.reward_matrix
+    def get_reward_matrix(self, reward_mode=None):  #"s'", "a" (MAB), "sa", "sas'", "ass'", "as'" (?) 
+       if reward_mode is None  or reward_mode == self.reward_mode:
+          R = self.reward_matrix
+       else:
+          print("TO DO: convert reward modes")
+          R = None
        return R
        
+    def print_reward_matrix(self, reward_mode=None):  #"s'", "a" (MAB), "sa", "sas'", as'" (?) 
+       R = self.get_reward_matrix(reward_mode=reward_mode)
+       if R is not None:
+          #for x in range(self.num_cols):
+          #   for y in range(self.num_rows):
+          #      print(f"s'=(x,y)=({x},{y}), r={R[x,y]}")
+          for y in range(self.num_rows):
+             for x in range(self.num_cols):
+                print(round(R[x,y],3), end=' ')
+             print()
+    
     def get_transition_matrix(self):
-       #P = np.array( [[[(x, y) for x in reange(self.num_cols)] for y in range(self.num_rows)] for a in range(4) )
-       return None
+       P = np.array( [[[self._next_position(a, [x, y]) for a in range(4)] for y in range(self.num_rows)] for x in range(self.num_cols) ])
+       return P
 
 
     def reset(self, seed=None, options=None):
 
-        super().reset(seed=seed)
+        #observation, initial_budget, info = super().reset(seed=seed)
+        observation, info = super().reset(seed=seed)
 
         if self.num_rows == self.num_cols:
             self._agent_location = np.array([0, 0])
@@ -133,19 +184,21 @@ class GridEnv(Env):
             if self._render_frame is not None:
                self._render_frame()
 
+        #return observation, initial_budget, info
         return observation, info
 
 
+    def _next_position(self, action, location=None):
+        if location is None:
+           location = self._agent_location
+        direction = self.action_to_direction[action]
+        return np.clip(location + direction, [0, 0], [self.num_cols-1 , self.num_rows-1])
    
     def step(self, action):
 
         super().step(action)
 
-        #old_agent_location = self._get_obs()
-        direction = self._action_to_direction[action]
-        self._agent_location = np.clip(
-            self._agent_location + direction, [0, 0], [self.num_cols - 1 , self.num_rows - 1]
-        )
+        self._agent_location = self._next_position(action)
         observation = self._get_obs()
         info = self._get_info()
 
@@ -182,16 +235,27 @@ class GridEnvGUI(PyGameGUI):
                  cell_size=None,
                  fps=80,
                  batch_run=10000,
+                 grid_elements=[
+                    #{'pos':0, 'label':'agent', 'data':[{'source':'env', 'attr':'R', 'type':"s'"}]},
+                    {'pos':1, 'label':'N_sa', 'source':'agent', 'attr':'N_sa', 'type':'sa', 'color_mode':'inversed_log_grayscale', 'backcolor':None},
+                    #{'pos':2, 'label':'V', 'source':'agent', 'attr':'V', 'type':'s', 'color_mode':'grayscale', 'backcolor':None},
+                    {'pos':2, 'label':'Q', 'source':'agent', 'attr':'Q', 'type':'sa', 'color_mode':'grayscale', 'backcolor':None},
+                    {'pos':3, 'label':'K', 'source':'agent', 'attr':'K', 'type':'sa', 'color_mode':'grayscale', 'backcolor':None},
+                    {'pos':4, 'label':'policy', 'source':'agent', 'attr':'policy', 'type':'sa', 'color_mode':'grayscale', 'backcolor':(0,0,0)},
+                 ],
                  on_close_listeners:Iterable[Callable]=[],
-                 close_on_finish=True):
-                 
+                 close_on_finish=True, finish_on_close=False):
+
         super().__init__(sim,
                          height=height, width=width,
                          fps=fps, batch_run=batch_run,
                          on_close_listeners=on_close_listeners,
-                         close_on_finish=close_on_finish)
+                         close_on_finish=close_on_finish,
+                         finish_on_close=finish_on_close)
 
         self.cell_size = cell_size
+        
+        self.grid_elements = grid_elements
 
 
     #--------------------------------------------------------------    
@@ -209,7 +273,7 @@ class GridEnvGUI(PyGameGUI):
         self.board_height = self.sim.env.num_rows * self.cell_size
         self.board_width = self.sim.env.num_cols * self.cell_size
         
-        self.height = 5 * (self.board_height + self.margin_size) + 2 * self.cell_size
+        self.height = (len(self.grid_elements)+1) * (self.board_height + self.margin_size) + 3 * self.cell_size
 
         self.font_size = int(self.cell_size * 0.8)
         self.font = pg.font.SysFont(None, self.font_size)
@@ -243,8 +307,7 @@ class GridEnvGUI(PyGameGUI):
          if vertical_skip is None:
             vertical_skip = vertical_position * (self.board_height + self.margin_size)
          
-         line_color = (0, 0, 0
-                       )
+         line_color = (0, 0, 0)
          #draw horizontal lines
          for y in range(self.sim.env.num_rows + 1):
              pg.draw.line(
@@ -443,22 +506,34 @@ class GridEnvGUI(PyGameGUI):
          #draw the agent
          self._draw_agent(canvas, vertical_position=0)
 
-         #draw 1/(N+1) Matrix
-         #self._draw_exploration(canvas, vertical_position=1)
-         if hasattr(self.sim.agent, 'N') and self.sim.agent.N is not None:
-            self._draw_sa_matrix(canvas, matrix=self.sim.agent.N, vertical_position=1, min_q=0, color_mode='inversed_log_grayscale')
+         for grid_element in self.grid_elements:
+            if grid_element['source'] == 'agent':
+               source = self.sim.agent
+            elif grid_element['source'] == 'env':
+               source = self.sim.env
+            else:
+               source = self.sim
+            if hasattr(source, grid_element['attr']):
+               attr = getattr(source, grid_element['attr'])
+               if attr is not None:
+                  self._draw_sa_matrix(canvas, matrix=attr, vertical_position=grid_element['pos'], color_mode=grid_element['color_mode'], backcolor=grid_element['backcolor'])
+            
+         # #draw 1/(N+1) Matrix
+         # #self._draw_exploration(canvas, vertical_position=1)
+         # if hasattr(self.sim.agent, 'N') and self.sim.agent.N is not None:
+         #    self._draw_sa_matrix(canvas, matrix=self.sim.agent.N, vertical_position=1, min_q=0, color_mode='inversed_log_grayscale')
                     
-         #draw Q Matrix
-         if hasattr(self.sim.agent, 'Q') and self.sim.agent.Q is not None:
-            self._draw_sa_matrix(canvas, matrix=self.sim.agent.Q, vertical_position=2)
+         # #draw Q Matrix
+         # if hasattr(self.sim.agent, 'Q') and self.sim.agent.Q is not None:
+         #    self._draw_sa_matrix(canvas, matrix=self.sim.agent.Q, vertical_position=2)
 
-         #draw K Matrix
-         if hasattr(self.sim.agent, 'K') and self.sim.agent.K is not None:
-            self._draw_sa_matrix(canvas, matrix=self.sim.agent.K, vertical_position=3)
+         # #draw K Matrix
+         # if hasattr(self.sim.agent, 'K') and self.sim.agent.K is not None:
+         #    self._draw_sa_matrix(canvas, matrix=self.sim.agent.K, vertical_position=3)
 
-         #draw Policy
-         if hasattr(self.sim.agent, 'policy') and self.sim.agent.policy is not None:
-            self._draw_sa_matrix(canvas, matrix=self.sim.agent.policy, vertical_position=4, min_q=0, backcolor=(0,0,0))
+         # #draw Policy
+         # if hasattr(self.sim.agent, 'policy') and self.sim.agent.policy is not None:
+         #    self._draw_sa_matrix(canvas, matrix=self.sim.agent.policy, vertical_position=4, min_q=0, backcolor=(0,0,0))
 
          #budget bar
          if hasattr(self.sim.agent, "b") and self.sim.agent.b is not None:
@@ -469,6 +544,9 @@ class GridEnvGUI(PyGameGUI):
          
          #canvas
          self.window.blit(canvas, canvas.get_rect())
+
+         #name label
+         self._draw_bar_label(str(self.sim.agent.name), vertical_position=5, bar_position=2)
 
          #time label
          self._draw_bar_label("t = " + str(self.sim.env.t), vertical_position=5, bar_position=1)
@@ -485,3 +563,85 @@ class GridEnvGUI(PyGameGUI):
          
          super().refresh()
 
+
+###############################################################################
+
+#UNIT TESTS
+if __name__ == "__main__":
+
+    print("\nGRID MODULE - UNIT TESTS\n")
+    
+    g = GridEnv(num_rows=2, num_cols=3)
+    
+    g.print_reward_matrix()
+
+    P = g.get_transition_matrix()
+    
+    for x in range(g.num_cols):
+       for y in range(g.num_rows):
+          for a in range(4):
+             print(f"(x,y)=({x},{y}),a={a}({g.action_str[a]}) {P[x,y,a]}")
+    
+    reward_targets = {+7 : [(2, 1)],
+                      +3 : [(4, 1)]}
+    
+    env = g
+    
+    #reward in the form "factored" + "s'"
+    R = env.get_reward_matrix()
+    print(R.shape)
+    #reward in the form "flat" + "s'"
+    R = R.reshape(env.observation_comb)
+    print(R.shape)
+    #reward in the form "flat" + "ass'"
+    R = np.tile(R, (env.action_comb, env.observation_comb, 1))
+    print(R.shape)
+
+    #transition in the form "sas'" + "factored" + "deterministic"
+    P = env.get_transition_matrix()
+    print(P.shape)
+    #transition in the form "sas'" + "flat(sa)/factored(s')" + "deterministic"
+    P = P.reshape( (env.observation_comb, env.action_comb, 2) )
+    print(P.shape)
+    #transition in the form "ass'" + "flat(as)/factored(s')" + "deterministic"
+    P = np.swapaxes(P,0,1)
+    print(P.shape)
+    #transition in the form "ass'" + "flat" + "deterministic"
+    #P= np.multiply(P, [env.num_cols,1])
+    P= np.multiply(P, [1,env.num_rows])
+    print(P.shape)
+    print(P)
+    P = np.sum(P,axis=2)
+    print(P.shape)
+    print(P)
+    #transition in the form "ass'" + "flat" + "stochastic"
+    #P = np.expand_dims(P, axis=-1)
+    #print(P.shape)
+    #P = np.repeat(P, env.observation_comb, axis=-1)
+    #print(P.shape)
+    XP = np.zeros( (env.action_comb, env.observation_comb, env.observation_comb) , dtype=float)
+    print(XP.shape)
+    for act in range(env.action_comb):
+       for obs in range(env.observation_comb):
+          next_obs = P[act, obs]
+          XP[act, obs, next_obs] = 1.0
+
+    print(XP)
+
+
+    g = GridEnv(num_rows=3, num_cols=5, reward_targets=reward_targets, default_reward=-1)
+
+    g.print_reward_matrix()
+
+    P = g.get_transition_matrix()
+
+    for x in range(g.num_cols):
+       for y in range(g.num_rows):
+          for a in range(4):
+             print(f"(x,y)=({x},{y}),a={a}({g.action_str[a]}) {P[x,y,a]}")
+
+    g = GridEnv(num_rows=3, num_cols=5, reward_targets=reward_targets, reward_spread=0.5, default_reward=-1.)
+
+    g.print_reward_matrix()
+
+    P = g.get_transition_matrix()
