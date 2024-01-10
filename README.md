@@ -28,8 +28,8 @@ Python scripts and Jupyter notebooks concerning: Pascal's Triangle, Catalan's Tr
 - [ ] Trust Region Policy Optimization (TRPO)
 
 ### Survival RL Agents
-- [ ] Survival Q-learning with budget threshold
-- [ ] Survival Deep Q-Network
+- [x] Survival Q-learning with budget threshold
+- [x] Survival Deep Q-Network
 
 ### Safe RL Agents
 
