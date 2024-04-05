@@ -6,7 +6,7 @@ import numpy.ma as ma
 from math import sqrt, log
 from scipy.stats import beta, norm, binom, truncnorm
 from scipy.integrate import quadrature as integral
-from collections import Iterable
+from collections.abc import Iterable
 from math import sqrt, log
 from numba import jit
 from itertools import accumulate as acc

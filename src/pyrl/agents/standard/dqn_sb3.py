@@ -53,6 +53,9 @@ class DQN_SB3(Agent):
         
         self.train_on_reset = train_on_reset
 
+        self.network_policy = network_policy
+        self.discount=discount
+        self.learning_rate=learning_rate
         self.training_steps=training_steps
         self.learning_starts = learning_starts       
         self.gradient_steps = gradient_steps
@@ -73,11 +76,13 @@ class DQN_SB3(Agent):
         if store_Q:
            # Q(s, a) table
            self.Q = None
+           self.Q_target = None
            
         self.store_policy = store_policy
         if store_policy:
            #policy
            self.policy = None
+           self.policy_target = None
 
 
     #--------------------------------------------------------------    
@@ -108,8 +113,10 @@ class DQN_SB3(Agent):
            
            if self.store_Q:
               self.Q = np.zeros( self.observation_shape+self.action_shape, dtype=float)
+              self.Q_target = np.zeros( self.observation_shape+self.action_shape, dtype=float)
            if self.store_policy:
               self.policy=np.zeros(self.observation_shape+self.action_shape, dtype=float)
+              self.policy_target=np.zeros(self.observation_shape+self.action_shape, dtype=float)
            
            #need to initialize the logger, the rest is not useful
            total_timesteps, callback = self.model._setup_learn(
@@ -136,11 +143,15 @@ class DQN_SB3(Agent):
          
        if self.store_Q:
           for obs in self.observation_iterator:
+
              obs_th = self.model.q_net.obs_to_tensor(np.array(obs))[0]
              #dis = model.policy.get_distribution(obs_th)
              #probs = dis.distribution.probs
              #probs_np = probs.detach().numpy()
              self.Q[obs] = self.model.q_net(obs_th).numpy(force=True)
+
+             obs_th = self.model.q_net_target.obs_to_tensor(np.array(obs))[0]
+             self.Q_target[obs] = self.model.q_net_target(obs_th).numpy(force=True)
 
     #--------------------------------------------------------------    
 

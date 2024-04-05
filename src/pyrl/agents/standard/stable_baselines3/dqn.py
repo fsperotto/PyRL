@@ -55,9 +55,9 @@ class DQNAgent(Agent):
         self.batch_size = batch_size
         
         #observations (what the agent perceives from the environment state)
-        self.observation_space, self.observation_shape, self.num_obs_var, self.num_obs_comb = pyrl_space(self.environment.observation_space)
+        self.observation_space, self.observation_shape, self.num_obs_var, self.num_obs_comb, self.obs_idx_factors = pyrl_space(self.environment.observation_space)
         #actions
-        self.action_space, self.action_shape, self.num_act_var, self.num_act_comb = pyrl_space(self.environment.action_space)
+        self.action_space, self.action_shape, self.num_act_var, self.num_act_comb, self.act_idx_factors = pyrl_space(self.environment.action_space)
         
         self.initial_Q_value = 0
         self.store_N = store_N

@@ -77,9 +77,12 @@ class PolicyIteration(Agent):
            #initial policy is random
            else:
               self.policy = np.zeros(self.observation_shape + self.action_shape)
+              #a = ensure_tuple(self.action_space.sample())
+              #self.policy = np.full(self.observation_shape, a, dtype=object)
               for obs in self.observation_iterator:
                  a = ensure_tuple(self.action_space.sample())
-                 self.policy[obs + a] = 1
+                 self.policy[obs + a] = 1.0
+                 #self.policy[obs] = a
            
            self.Q = np.zeros(self.observation_shape + self.action_shape, dtype=float)
 
@@ -126,16 +129,24 @@ class PolicyIteration(Agent):
               #Update V(s)
               for prev_obs in self.env.observation_iterator:
                  new_v = 0.0
-                 #act = self.policy[prev_obs].argmax()
+                 #act = self.policy[prev_obs]
+                 #for next_obs in self.env.observation_iterator:
+                 #   transition_prob = self.P[prev_obs + act + next_obs]
+                 #   expected_reward = self.R[prev_obs + act + next_obs]
+                 #   next_value = old_V[next_obs]
+                 #   value_fragment = transition_prob * (expected_reward + (self.discount * next_value))
+                 #   new_v += value_fragment
+                 ##act = self.policy[prev_obs].argmax()
                  for act in self.env.action_iterator:
                      act_prob = self.policy[prev_obs + act]
                      if act_prob > 0.0:
                         for next_obs in self.env.observation_iterator:
                            transition_prob = self.P[prev_obs + act + next_obs]
-                           expected_reward = self.R[prev_obs + act + next_obs]
-                           next_value = old_V[next_obs]
-                           value_fragment = act_prob * transition_prob * (expected_reward + (self.discount * next_value))
-                           new_v += value_fragment
+                           if transition_prob > 0.0:
+                              expected_reward = self.R[prev_obs + act + next_obs]
+                              next_value = old_V[next_obs]
+                              value_fragment = act_prob * transition_prob * (expected_reward + (self.discount * next_value))
+                              new_v += value_fragment
                  
                  delta = max(delta, abs(old_V[prev_obs] - new_v))
    
@@ -167,14 +178,15 @@ class PolicyIteration(Agent):
               Q_s = self.Q[obs]
               max_q = Q_s.max()
               a_policy = np.unravel_index(np.argmax(Q_s == max_q, axis=None), self.env.action_shape)
-              #a_policy = np.random.choice(np.flatnonzero(Q_s == max_q))
-              #for a in self.action_iterator:
-              #   if (a == a_policy):
-              #      self.policy[obs + a] = 1.0
-              #   else:
-              #      self.policy[obs + a] = 0.0
-              #self.policy[obs].fill(0.0)
+              ##a_policy = np.random.choice(np.flatnonzero(Q_s == max_q))
+              ##for a in self.action_iterator:
+              ##   if (a == a_policy):
+              ##      self.policy[obs + a] = 1.0
+              ##   else:
+              ##      self.policy[obs + a] = 0.0
+              ##self.policy[obs].fill(0.0)
               self.policy[obs + ensure_tuple(a_policy)] = 1.0
+              #self.policy[obs] = ensure_tuple(a_policy)
            #POLICY UPDATED
            
            #verify policy convergence

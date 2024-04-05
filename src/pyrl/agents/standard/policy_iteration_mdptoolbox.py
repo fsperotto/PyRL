@@ -49,7 +49,7 @@ class PolicyIteration_MDPtoolbox(Agent):
         else:
            self.P = env.get_transition_matrix()
         
-        self.mdp = PolicyIteration(self.P, self.R, discount=discount, max_iter=max_iter, eval_type=eval_type)
+        self.mdp = PolicyIteration( self.P, self.R, discount=discount, max_iter=max_iter, eval_type=eval_type)
         #self.mdp = PolicyIteration(self.P, self.R, discount=discount, max_iter=1000, eval_type="iterative")
         
         self.Q = None
@@ -68,16 +68,17 @@ class PolicyIteration_MDPtoolbox(Agent):
         #fact_policy = np.array(self.mdp.policy).reshape(self.observation_shape)
         #print(fact_policy)
         self.policy = np.zeros( self.observation_shape + self.action_shape, dtype=float)
-        print(self.policy.shape)
-        #for obs_idx in range(env.observation_comb):
+        self.V = np.zeros(self.observation_shape, dtype=float)
         for obs_idx, obs_tpl in enumerate(self.observation_iterator):
+        #for obs_idx in range(self.observation_comb):
+        #   obs_tpl = np.unravel_index(obs_idx, self.observation_shape)
            act_idx = self.mdp.policy[obs_idx]
            act_tpl = np.unravel_index(act_idx, self.action_shape)
            self.policy[obs_tpl + act_tpl] = 1.0
+           self.V[obs_tpl] = self.mdp.V[obs_idx]
         
-        #self.Q = self.mdp.Q
-        #self.V = self.mdp.V
-        #self.policy = self.mdp.policy
+        #self.Q = np.reshape(self.mdp.Q, self.observation_shape + self.action_shape)
+        #self.V = np.reshape(self.mdp.V, self.observation_shape)
       
     #--------------------------------------------------------------    
     def _choose(self):

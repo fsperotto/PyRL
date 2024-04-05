@@ -23,6 +23,8 @@ from typing import Iterable, Callable, List, Union
 from pyrl.agent import Agent
 from pyrl.env import Env, EnvWrapper
 
+from numba import njit
+
 ###################################################################
 
             

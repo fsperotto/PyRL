@@ -6,7 +6,7 @@ import numpy.ma as ma
 from math import sqrt, log, inf
 from scipy.stats import beta, norm
 from scipy.integrate import quadrature as integral
-from collections import Iterable
+from collections.abc import Iterable
 from numba import jit
 from itertools import accumulate as acc
 from decimal import Decimal
@@ -685,7 +685,7 @@ class UCBPolicy(IndexedPolicy):
             self.alpha_prime = (r_max - r_min)**2 * alpha
         
     def default_label(self):
-        return   r"UCB ($\alpha=" + str(round(self.alpha,2)) + ", \alpha'= " + str(round(self.alpha_prime,2)) + "$)"
+        return   "UCB ($\\alpha=" + str(round(self.alpha,2)) + ", \\alpha'= " + str(round(self.alpha_prime,2)) + "$)"
         
     def evaluate(self):
         r""" Compute the current index, at time t and after :math:`N_k(t)` pulls of arm k:
@@ -703,7 +703,7 @@ class UCBPolicy(IndexedPolicy):
 class GamblerUCBPolicy(UCBPolicy):
 
     def default_label(self):
-        return   r"Gambler UCB ($\alpha=" + str(round(self.alpha,2)) + ", \alpha'= " + str(round(self.alpha_prime,2)) + "$)"
+        return   "Gambler UCB ($\\alpha=" + str(round(self.alpha,2)) + ", \\alpha'= " + str(round(self.alpha_prime,2)) + "$)"
         
     def evaluate(self):
         r""" Compute the current index, at time t and after :math:`N_k(t)` pulls of arm k:

@@ -8,19 +8,68 @@ from math import sqrt, log
 from scipy.stats import beta, norm
 from scipy.integrate import quadrature as integral
 from scipy.ndimage.filters import uniform_filter1d
-from collections import Iterable
+from collections.abc import Iterable
 from math import sqrt, log
 from numba import jit
 from itertools import accumulate as acc
 from multiprocess import Pool
+#from multiprocessing import Pool
 import psutil
-from tqdm.notebook import tqdm
+#from tqdm.notebook import tqdm
+from tqdm import tqdm
 from IPython.display import display
 import matplotlib.pyplot as plt
 
+from pyrl import Sim, Agent, EnvWrapper, PyGameRenderer, PyGameGUI, ensure_tuple
 
 ################################################################################
 
+class SimSMAB(Sim):
+
+    def __init__(self, agents, env, 
+                 episode_horizon:int=100, num_episodes:int=1, num_repetitions:int=1,
+                 close_on_finish=True):
+        pass
+    
+    def _ep_run(self, alg, drawn_reward_i_t=None):
+        # alg is the decision algorithm
+        # j is the index of the current repetition
+        # drawn_reward_i_t is the previous draw result, if prev_draw
+        # complete the matrices H and R for the row g, j
+
+        # Initialize
+        alg.reset()
+
+        # Allocate matrix for Rewards and History of selected Actions (2d matrices [t x g])
+        received_rewards_t = np.empty((self.h), dtype=float)  #successes
+        chosen_actions_t = np.empty((self.h), dtype=int)      #history of actions
+        
+        # Loop on time
+        #for t in tqdm(self.T, desc=tqdm_desc_it, leave=tqdm_leave, disable=(tqdm_disable or self.n > 1 or self.m > 1) ):
+        for t in range(self.h):
+            # The algorithm chooses the arm to play
+            i = alg.choose()
+            #no choice, no action
+            if i == -1:
+                x = 0.0
+            else:
+                # The arm played gives reward
+                if drawn_reward_i_t is not None:
+                    x = drawn_reward_i_t[i, t]
+                else:
+                    x = self.A[i].draw()
+            # The reward is returned to the algorithm
+            alg.observe(x)
+            # Save both
+            received_rewards_t[t] = x
+            chosen_actions_t[t] = i
+            #self.received_rewards_j_g_t[j, g, t] = x
+            #self.chosen_actions_j_g_t[j, g, t] = i
+            
+        return received_rewards_t, chosen_actions_t
+    
+
+###############################################################################
 
 class SMAB():
     """ Base survival MAB process. """
@@ -575,7 +624,7 @@ class SMAB():
     """ 
     Plot the graph
     """
-    def _call_plot(self, xlabel=None, ylabel=None, title=None, names=None, filename=None, show=True):
+    def _call_plot(self, xlabel=None, ylabel=None, title=None, names=None, filename=None, show=True, block=False):
 
         if names is not None:
             plt.legend(names)
@@ -594,7 +643,7 @@ class SMAB():
             plt.savefig(filename)
 
         if show:
-            plt.show()
+            plt.show(block=block)
 
 
     """ 
@@ -1279,3 +1328,4 @@ class SMAB():
         plt.xscale('log')
 
         self._call_plot(xlabel=xlabel, ylabel=ylabel, title=title, filename=filename, show=show)
+

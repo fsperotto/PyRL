@@ -56,8 +56,10 @@ class GridEnv(Env):
     def __init__(self, render_mode: str=None, 
                  size: Union[None, int, Tuple[int, int]]=None,
                  num_rows=None, num_cols=None,
+                 default_reward:float=0.0,
+                 reward_variance:float=0.0,
                  reward_matrix=None,
-                 reward_targets=None, default_reward:float=0.0, reward_spread:float=0.0,
+                 reward_spots=None, reward_spread:float=0.0,
                  reward_mode="s'",  # "sas'" , "as'" , "sa", "a" , "s'",
                  initial_position=None,
                  default_initial_budget=None,
@@ -95,37 +97,43 @@ class GridEnv(Env):
 
         self.reward_mode = reward_mode
         
-        self.default_reward = float(default_reward)
-
+        self.reward_variance = reward_variance
+        self.reward_std_dev = math.sqrt(reward_variance)
+        
+        #rewards informed via matrix
         if reward_matrix is not None:
-            self.reward_matrix = np.array(reward_matrix)
-            self.reward_targets = None
-            if reward_targets is not None:
-                print("WARNING: GridEnv cannot receive reward matrix and reward targets")
+            self.reward_matrix = np.array(reward_matrix, dtype=float) + float(default_reward)
+            #assert self.reward_matrix.shape == (self.num_cols, self.num_rows)
+        
+        #rewards not informed via matrix
         else:
-            if reward_targets is not None:
-                self.reward_matrix = np.full((self.num_cols, self.num_rows), self.default_reward)
-                self.reward_targets = reward_targets
-                if reward_spread == 0.0:
-                   #each target is exactly the value at the position
-                   for r, pos_list in reward_targets.items():
-                      for x, y in pos_list:
-                         self.reward_matrix[x, y] = r
-                else:
-                   #each target is a center of reward, spreading the value around
-                   for r, pos_list in reward_targets.items():
-                      for cx, cy in pos_list:
-                         for x in range(self.num_cols):  
-                            for y in range(self.num_rows):
-                               #d = math.dist((cx, cy), (x, y))
-                               d = abs(cx-x) + abs(cy-y)
-                               self.reward_matrix[x, y] += r * (reward_spread ** d)
+           #nor via spots
+           if reward_spots is None:
+              #create randomized reward matrix with mean equivalent to default reward and variance to variance
+              #self.reward_matrix = (2 * np.random.sample((self.num_cols, self.num_rows)) - 1) + float(default_reward) 
+              self.reward_matrix = np.random.normal( loc = default_reward, scale = self.reward_std_dev, size = (self.num_cols, self.num_rows))
+           #rewards will be informed via spots
+           else:
+              #create initial matrix full of default reward
+              self.reward_matrix = np.full((self.num_cols, self.num_rows), float(default_reward))
+           
+        #rewards informed via spots
+        if reward_spots is not None:
+          #without reward spreading
+          if reward_spread == 0.0:
+             #each spot increments its value only at the exact position
+             for (cx,cy), r in reward_spots.items():
+                self.reward_matrix[cx,cy] += r
+          #with reward spreading
+          else:
+             #each target is a center of reward, spreading the value around
+             for (cx, cy), r in reward_spots.items():
+                for x in range(self.num_cols):  
+                   for y in range(self.num_rows):
+                      #d = math.dist((cx, cy), (x, y))
+                      d = abs(cx-x) + abs(cy-y)
+                      self.reward_matrix[x, y] += r * (reward_spread ** d)
                    
-                   
-            else:
-                self.reward_matrix = 2 * np.random.sample((self.num_cols, self.num_rows)) - 1
-                self.reward_targets = None
-
         self._render_frame = None
 
         if initial_position is None:
@@ -194,6 +202,7 @@ class GridEnv(Env):
         direction = self.action_to_direction[action]
         return np.clip(location + direction, [0, 0], [self.num_cols-1 , self.num_rows-1])
    
+    
     def step(self, action):
 
         super().step(action)
@@ -205,8 +214,11 @@ class GridEnv(Env):
         #if self.render_mode is not None:
         #    self._render_frame()
 
-        reward = self.reward_matrix.item(tuple(self._agent_location))
-
+        if self.reward_variance is None or self.reward_variance == 0.0:
+           reward = self.reward_matrix.item(tuple(self._agent_location))
+        else:
+           reward = np.random.normal(self.reward_matrix.item(tuple(self._agent_location)), self.reward_std_dev)
+                    
         return observation, reward, False, self.truncated, info
 
     def render(self):
@@ -381,14 +393,70 @@ class GridEnvGUI(PyGameGUI):
 
       #--------------------------------------------------------------    
     def _color(self, v, min_v, amplitude_v, color_mode='grayscale'):
-         c = int(255 * (v - min_v) / amplitude_v)
-         if color_mode == 'inversed_grayscale':
-            c = 255-c
-         elif color_mode == 'log_grayscale':
-            c = 255//(v+1)
-         elif color_mode == 'inversed_log_grayscale':
-            c = 255 - 255//(v+1)
-         return c
+
+         if color_mode == 'reward':
+
+            if v == 0:
+                r = g = b = 200
+            elif v < 0:
+                r = 255
+                g = int(255 * (1.0 - (v / min_v)) / 1.5)
+                b = g
+            else:
+                g = 255
+                r = int(255 * (1.0 - (v / (min_v + amplitude_v))) / 1.5)
+                b = r
+
+            color = (r, g, b)
+            
+         else:
+            
+            c = int(255 * (v - min_v) / amplitude_v)
+            
+            if color_mode == 'inversed_grayscale':
+               c = 255-c
+            elif color_mode == 'log_grayscale':
+               c = 255//(v+1)
+            elif color_mode == 'inversed_log_grayscale':
+               c = 255 - 255//(v+1)
+
+            color = (c, c, c)
+               
+         return color
+
+    #--------------------------------------------------------------    
+    def _draw_s_matrix(self, canvas, matrix, min_value=None, max_value=None, vertical_skip=None, vertical_position=0, color_mode='grayscale', backcolor=None):
+
+       if vertical_skip is None:
+          vertical_skip = vertical_position * (self.board_height + self.margin_size)
+       
+       if max_value is None: 
+          max_value = matrix.max()
+       
+       if min_value is None: 
+          min_value = matrix.min()
+       
+       dif = max_value - min_value
+       
+       #draw the matrix
+       for x in range(self.sim.env.num_cols):
+          for y in range(self.sim.env.num_rows):
+             
+             value = matrix[x, y]
+
+             if backcolor is None:
+                color = self._color(value, min_value, dif, color_mode=color_mode)
+             else:
+                color = backcolor
+                
+             points = pg.Rect(
+                       (x * self.cell_size, y * self.cell_size + vertical_skip),
+                       (self.cell_size, self.cell_size),
+                    )
+             
+             pg.draw.rect(canvas, color, points)
+                 
+       self._draw_grid(canvas, vertical_skip=vertical_skip)
 
     #--------------------------------------------------------------    
     def _draw_sa_matrix(self, canvas, matrix, min_q=None, max_q=None, vertical_skip=None, vertical_position=0, color_mode='grayscale', backcolor=None):
@@ -411,8 +479,7 @@ class GridEnvGUI(PyGameGUI):
                    
                 q = matrix[x, y].max()
                 if backcolor is None:
-                   c = self._color(q, min_q, dif_q, color_mode=color_mode)
-                   color = (c, c, c)
+                   color = self._color(q, min_q, dif_q, color_mode=color_mode)
                 else:
                    color = backcolor
                 points = pg.Rect(
@@ -423,47 +490,47 @@ class GridEnvGUI(PyGameGUI):
                 
                 #0: np.array([1, 0]),  #right
                 q = matrix[x, y, 0]
-                c = self._color(q, min_q, dif_q, color_mode=color_mode)
+                color = self._color(q, min_q, dif_q, color_mode=color_mode)
                 right_triangle_points = [
                      ((x+1) * self.cell_size, y * self.cell_size + self.cell_size//2 + vertical_skip), 
                      (x * self.cell_size + 2*self.cell_size//3, y * self.cell_size + self.cell_size//3 + vertical_skip), 
                      (x * self.cell_size + 2*self.cell_size//3, y * self.cell_size + 2*self.cell_size//3 + vertical_skip)
                   ]
-                pg.draw.polygon(canvas, (c, c, c), right_triangle_points)
+                pg.draw.polygon(canvas, color, right_triangle_points)
                 pg.draw.polygon(canvas, (0, 0, 0), right_triangle_points, width=1)
 
 
                 #1: np.array([0, 1]),  #down
                 q = matrix[x, y, 1]
-                c = self._color(q, min_q, dif_q, color_mode=color_mode)
+                color = self._color(q, min_q, dif_q, color_mode=color_mode)
                 down_triangle_points = [
                        (x * self.cell_size + self.cell_size//2, (y+1) * self.cell_size + vertical_skip), 
                        (x * self.cell_size + self.cell_size//3,   y * self.cell_size + 2*self.cell_size//3 + vertical_skip), 
                        (x * self.cell_size + 2*self.cell_size//3, y * self.cell_size + 2*self.cell_size//3 + vertical_skip)
                      ]
-                pg.draw.polygon(canvas, (c, c, c), down_triangle_points)
+                pg.draw.polygon(canvas, color, down_triangle_points)
                 pg.draw.polygon(canvas, (0, 0, 0), down_triangle_points, width=1)
 
                 #2: np.array([-1, 0]), #left
                 q = matrix[x, y, 2]
-                c = self._color(q, min_q, dif_q, color_mode=color_mode)
+                color = self._color(q, min_q, dif_q, color_mode=color_mode)
                 left_triangle_points = [
                        (x * self.cell_size, y * self.cell_size + self.cell_size//2 + vertical_skip), 
                        (x * self.cell_size + self.cell_size//3, y * self.cell_size + self.cell_size//3 + vertical_skip), 
                        (x * self.cell_size + self.cell_size//3, y * self.cell_size + 2*self.cell_size//3 + vertical_skip)
                      ]
-                pg.draw.polygon(canvas, (c, c, c), left_triangle_points)
+                pg.draw.polygon(canvas, color, left_triangle_points)
                 pg.draw.polygon(canvas, (0, 0, 0), left_triangle_points, width=1)
                    
                 #3: np.array([0, -1]), #up                
                 q = matrix[x, y, 3]
-                c = self._color(q, min_q, dif_q, color_mode=color_mode)
+                color = self._color(q, min_q, dif_q, color_mode=color_mode)
                 up_triangle_points = [
                        (x * self.cell_size + self.cell_size//2, y * self.cell_size + vertical_skip), 
                        (x * self.cell_size + self.cell_size//3,   y * self.cell_size + self.cell_size//3 + vertical_skip), 
                        (x * self.cell_size + 2*self.cell_size//3, y * self.cell_size + self.cell_size//3 + vertical_skip)
                      ]
-                pg.draw.polygon(canvas, (c, c, c), up_triangle_points)
+                pg.draw.polygon(canvas, color, up_triangle_points)
                 pg.draw.polygon(canvas, (0, 0, 0), up_triangle_points, width=1)
                 
        #draw grid lines
@@ -516,7 +583,10 @@ class GridEnvGUI(PyGameGUI):
             if hasattr(source, grid_element['attr']):
                attr = getattr(source, grid_element['attr'])
                if attr is not None:
-                  self._draw_sa_matrix(canvas, matrix=attr, vertical_position=grid_element['pos'], color_mode=grid_element['color_mode'], backcolor=grid_element['backcolor'])
+                  if grid_element['type'] == "sa":
+                     self._draw_sa_matrix(canvas, matrix=attr, vertical_position=grid_element['pos'], color_mode=grid_element['color_mode'], backcolor=grid_element['backcolor'])
+                  else:
+                     self._draw_s_matrix(canvas, matrix=attr, vertical_position=grid_element['pos'], color_mode=grid_element['color_mode'], backcolor=grid_element['backcolor'])
             
          # #draw 1/(N+1) Matrix
          # #self._draw_exploration(canvas, vertical_position=1)
@@ -582,8 +652,10 @@ if __name__ == "__main__":
           for a in range(4):
              print(f"(x,y)=({x},{y}),a={a}({g.action_str[a]}) {P[x,y,a]}")
     
-    reward_targets = {+7 : [(2, 1)],
-                      +3 : [(4, 1)]}
+    #reward_targets = {+7 : [(2, 1)],
+    #                  +3 : [(4, 1)]}
+    reward_spots = { (2, 1):+7, 
+                     (4, 1):+3 }
     
     env = g
     
@@ -629,7 +701,7 @@ if __name__ == "__main__":
     print(XP)
 
 
-    g = GridEnv(num_rows=3, num_cols=5, reward_targets=reward_targets, default_reward=-1)
+    g = GridEnv(num_rows=3, num_cols=5, reward_spots=reward_spots, default_reward=-1)
 
     g.print_reward_matrix()
 
@@ -640,7 +712,7 @@ if __name__ == "__main__":
           for a in range(4):
              print(f"(x,y)=({x},{y}),a={a}({g.action_str[a]}) {P[x,y,a]}")
 
-    g = GridEnv(num_rows=3, num_cols=5, reward_targets=reward_targets, reward_spread=0.5, default_reward=-1.)
+    g = GridEnv(num_rows=3, num_cols=5, reward_spots=reward_spots, reward_spread=0.5, default_reward=-1.)
 
     g.print_reward_matrix()
 

@@ -23,9 +23,12 @@ dependencies = [
 	'scipy',
 	'matplotlib',
 	'pandas',
+	'plottable',
 	'tqdm',
 	'ray',
 	'SMPyBandits',
+	'swig',
+	'numba',
 	'gym',
 	'gymnasium',
 	'pygame',
@@ -36,15 +39,15 @@ dependencies = [
     none = []
 	basic = []
     simple = []
-	tested = ['swig', 'gymnasium[box2d]', 'gymnasium[atari,accept-rom-license]', 'gymnasium[all]', 'rich', 'torch', 'stable-baselines3']
-    gym_all = ['swig', 'gymnasium[box2d]', 'gymnasium[atari,accept-rom-license]', 'gymnasium[all]']
+	tested = ['gymnasium[box2d]', 'gymnasium[atari,accept-rom-license]', 'gymnasium[all]', 'rich', 'torch', 'stable-baselines3']
+    gym_all = ['gymnasium[box2d]', 'gymnasium[atari,accept-rom-license]', 'gymnasium[all]']
 	tensorflow = ['tensorflow-cpu']
-	pytorch = ['torch', 'torchvideo', 'torchaudio']
-	deep_cpu = ['tensorflow-cpu', 'torch', 'torchvideo', 'torchaudio']
+	pytorch = ['torch']
+	deep_cpu = ['tensorflow-cpu', 'torch']
 	tensorforce = ['tensorflow-cpu', 'tensorforce']
-	sb3 = ['rich', 'torch', 'torchvideo', 'torchaudio', 'stable-baselines3']
+	sb3 = ['rich', 'torch', 'stable-baselines3']
 	atari = ['gymnasium[atari,accept-rom-license]']
-	all = ['tensorflow-cpu', 'tensorforce', 'torch', 'torchvideo', 'torchaudio', 'stable-baselines3', 'swig', 'gymnasium[all]']
+	all = ['tensorflow-cpu', 'tensorforce', 'torch', 'stable-baselines3', 'gymnasium[all]']
 
 [project.urls]
 "Homepage" = "https://github.com/fsperotto/pyrl"
