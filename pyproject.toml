@@ -23,13 +23,11 @@ dependencies = [
 	'scipy',
 	'matplotlib',
 	'pandas',
-	'plottable',
 	'tqdm',
 	'ray',
 	'SMPyBandits',
 	'swig',
 	'numba',
-	'gym',
 	'gymnasium',
 	'pygame',
 	'pymdptoolbox'

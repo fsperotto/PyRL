@@ -67,7 +67,7 @@ def printdf(data, label_rows=None, label_cols=None, label_axis_cols=None, label_
         if heatmap is not None:
             dfs = dfs.background_gradient(axis=None, cmap=heatmap)
             #dfs = dfs.background_gradient(axis=1, cmap=heatmap)
-            dfs = dfs.map(lambda v : "color: lightgray" if v==0 else "")
+            dfs = dfs.applymap(lambda v : "color: lightgray" if v==0 else "")
         if precision is not None:
             dfs = dfs.set_precision(precision)
 
