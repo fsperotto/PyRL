@@ -51,7 +51,7 @@ def printdf(data, label_rows=None, label_cols=None, label_axis_cols=None, label_
     elif mode=='html':
 
         dfs = df.style
-        dfs = dfs.map(lambda v : "color: lightgray" if v==0 else ("color: yellow" if v<0 else "color: black") )
+        dfs = dfs.applymap(lambda v : "color: lightgray" if v==0 else ("color: yellow" if v<0 else "color: black") )
         dfs = dfs.set_table_styles([ 
                 {"selector":"th.row_heading", "props": [("border-right", "1px solid black")]},
                 {"selector":"th.index_name", "props": [("border-right", "1px solid black")]},
