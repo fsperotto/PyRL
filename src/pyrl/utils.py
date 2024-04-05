@@ -69,7 +69,8 @@ def printdf(data, label_rows=None, label_cols=None, label_axis_cols=None, label_
             #dfs = dfs.background_gradient(axis=1, cmap=heatmap)
             dfs = dfs.applymap(lambda v : "color: lightgray" if v==0 else "")
         if precision is not None:
-            dfs = dfs.set_precision(precision)
+            #dfs = dfs.set_precision(precision)
+            dfs = dfs.set_properties(precision=precision)
 
         if title is not None:
             display(HTML('<h3>' + title + '</h3>'))
