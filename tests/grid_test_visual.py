@@ -54,7 +54,7 @@ import time
 
 DEF_COLS = 25
 DEF_ROWS = 5
-DEF_HORIZON = 10000
+DEF_HORIZON = 2000
 DEF_OPT_Q = +100.0
 DEF_MAJ_R = +10.0
 DEF_MID_R = +3.0
@@ -70,7 +70,7 @@ DEF_INI_BUDGET = 100
 #DEF_MID_R_POSITIONS = [1/3, 2/3]
 DEF_LAUNCH_GUI = True
 
-DEF_R_SPREAD = 0.3
+DEF_R_SPREAD = 0.1
 DEF_R_SPOTS = {(DEF_COLS-2,DEF_ROWS-2) : DEF_MAJ_R,
                (DEF_COLS//4,DEF_ROWS//4) : DEF_MID_R/2,
                (DEF_COLS//2+2,DEF_ROWS//2) : DEF_MID_R}
@@ -116,7 +116,7 @@ def run(num_rows:int = DEF_ROWS, num_cols:int = DEF_COLS,
 
     #K-LEARNING AGENT PARAMETERS
     initial_K_value = opt_ini_q
-    exploration_threshold = 400
+    exploration_threshold = 200
     epsilon_K = 0.00 #exploration rate
 
 
@@ -345,7 +345,8 @@ def run(num_rows:int = DEF_ROWS, num_cols:int = DEF_COLS,
     #agent = agent_Q
     #agent = agent_ST_Q
     #agent = agent_K
-    agent = [agent_PI, agent_Q, agent_ST_Q, agent_K]   # agent_random, agent_PI, agent_DQN_SB3, agent_PI_MDPTB, 
+    agent = [agent_Q, agent_K]    
+    #agent = [agent_PI, agent_Q, agent_ST_Q, agent_K]   # agent_random, agent_PI, agent_DQN_SB3, agent_PI_MDPTB, 
     #agent = [agent_DQN_SB3]
 
     #window = GridEnvRender(env, agent, cell_size=35)
@@ -420,4 +421,5 @@ def main():
 ##################################################################################################
 
 if __name__ == '__main__':
-    sys.exit(main())
+    #sys.exit(main())
+    main()

@@ -1,14 +1,14 @@
-import gymnasium as gym
+#import gymnasium as gym
 import numpy as np
 import matplotlib.pyplot as plt
 
+#from pyrl import Sim, Agent, EnvWrapper, System, PyGameRenderer, PyGameGUI
 from pyrl.agents.classic import QLearning as ClassicQLearning
 from pyrl.agents.classic import PolicyIteration
 #from pyrl.agents.classic import DQNAgent
 from pyrl.agents.survival import QLearning as SurvivalQLearning
 from pyrl.agents.survival import KLearning
 from pyrl.environments.survival import SurvivalEnv
-from pyrl import Sim, Agent, EnvWrapper, System, PyGameRenderer, PyGameGUI
 
 from pyrl.environments.grid import GridEnv, GridEnvGUI
 

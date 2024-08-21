@@ -18,7 +18,7 @@ class Renderer():
     def __init__(self, env=None, agent=None):
 
         self.env = env       #reference to the environment
-        self.agent = agent       #reference to the environment
+        self.agent = agent       #reference to the agent
         
         self.ready = (self.env is not None)
 

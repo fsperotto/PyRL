@@ -23,14 +23,38 @@ from typing import Iterable, Callable, List, Union
 from pyrl.agent import Agent
 from pyrl.env import Env, EnvWrapper
 
-from numba import njit
+#from numba import njit
 
 ###################################################################
 
             
+class ListenerList():
+
+    def __init__(self, listeners : Union[None, Callable, List[Callable]] = None):
+        
+        if listeners is None:
+            self.listeners = []
+        elif isinstance(listeners, Callable):
+            self.listeners = [listeners]
+        else:
+            self.listeners = listeners
+    
+    def add_listeners(self, listeners : Union[Callable, List[Callable]] ):
+        if isinstance(listeners, Callable):
+            listeners = [listeners]
+        self.listeners += listeners
+         
+    def _evoke_listeners(self, *args, **kwargs):
+        for callback in self.listeners:
+            return_cancel = callback(self, *args, **kwargs)
+            if return_cancel is not None:
+               break
+
+    def clear_listeners(self):
+        self.listeners = []
 
 
-
+###################################################################
 
 
             
